@@ -12,3 +12,18 @@ cargo run --bin profile-runner -- ./zkevm-fixtures/fixtures/state_tests/
 ```
 
 3. The results will be saved in the `results/` directory
+
+
+Commands to run the benchmarks:
+
+Run Execution (Default)
+cargo run --release --bin profile-runner-cli tests
+
+Run Proving
+cargo run --release --bin profile-runner-cli tests --action prove
+
+Custom Output Directory
+cargo run --release --bin profile-runner-cli tests --output-dir my_results
+
+Force Rerun
+cargo run --release --bin profile-runner-cli tests --force-rerun

@@ -1,0 +1,30 @@
+[workspace]
+resolver = "2"
+members = [
+    "profile-metrics",
+    "profile-witness-generator", 
+    "profile-runner",
+    "profile-runner-cli", "state-serializer",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Nethermind"]
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0.12"
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+tokio = { version = "1.0", features = ["full"] }
+rayon = "1.7"
+clap = { version = "4.0", features = ["derive"] }
+risc0-zkvm = { version = "2.3.0", default-features = false, features = ["std", "client"] }
+revm = "27.0.2"
+hex = "0.4"
+async-trait = "0.1"
+sysinfo = "0.36.0" 

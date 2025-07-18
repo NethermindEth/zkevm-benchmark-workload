@@ -1,0 +1,13 @@
+[package]
+name = "profile-runner-cli"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+profile-runner = { path = "../profile-runner" }
+profile-witness-generator = { path = "../profile-witness-generator" }
+clap.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+tokio.workspace = true 
