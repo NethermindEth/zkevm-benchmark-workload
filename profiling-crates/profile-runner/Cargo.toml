@@ -1,0 +1,18 @@
+[package]
+name = "profile-runner"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+profile-metrics = { path = "../profile-metrics" }
+profile-witness-generator = { path = "../profile-witness-generator" }
+state-serializer = { path = "../state-serializer" }
+risc0-zkvm.workspace = true
+serde.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+rayon.workspace = true
+tokio.workspace = true
+methods = { path = "../../profiling-guests/risc0" }
+alloy-primitives = { version = "1.2.1" }
