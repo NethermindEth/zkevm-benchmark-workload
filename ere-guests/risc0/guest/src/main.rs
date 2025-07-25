@@ -7,7 +7,7 @@ extern crate alloc;
 use alloc::sync::Arc;
 use reth_chainspec::ChainSpec;
 use reth_evm_ethereum::EthEvmConfig;
-use reth_stateless::{fork_spec::ForkSpec, validation::stateless_validation, StatelessInput};
+use reth_stateless::{fork_spec::ForkSpec, StatelessInput, execute::stateless_execution};
 
 /// Entry point.
 pub fn main() {
@@ -22,7 +22,7 @@ pub fn main() {
 
     println!("start stateless validation");
     let start = env::cycle_count();
-    stateless_validation(input.block, input.witness, chain_spec, evm_config).unwrap();
+    stateless_execution(input.block, input.witness, chain_spec, evm_config).unwrap();
     let end = env::cycle_count();
     eprintln!("stateless validation (cycle tracker): {}", end - start);
 }
