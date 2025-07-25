@@ -9,7 +9,7 @@ use alloc::sync::Arc;
 
 use reth_chainspec::ChainSpec;
 use reth_evm_ethereum::EthEvmConfig;
-use reth_stateless::{StatelessInput, fork_spec::ForkSpec, validation::stateless_validation};
+use reth_stateless::{StatelessInput, fork_spec::ForkSpec, execute::stateless_execution};
 use tracing_subscriber::fmt;
 
 sp1_zkvm::entrypoint!(main);
@@ -25,7 +25,7 @@ pub fn main() {
     println!("cycle-tracker-report-end: read_input");
 
     println!("cycle-tracker-report-start: validation");
-    stateless_validation(input.block, input.witness, chain_spec, evm_config).unwrap();
+    stateless_execution(input.block, input.witness, chain_spec, evm_config).unwrap();
     println!("cycle-tracker-report-end: validation");
 }
 
