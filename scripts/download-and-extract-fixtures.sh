@@ -26,6 +26,29 @@ set -euo pipefail
 REPO="ethereum/execution-spec-tests"
 ASSET_NAME="fixtures_benchmark.tar.gz"
 
+# Function to determine the correct asset name based on the tag
+determine_asset_name() {
+  local tag="$1"
+  
+  # Extract the prefix from the tag (e.g., "benchmark", "zkevm", "verkle", etc.)
+  local prefix=$(echo "$tag" | sed 's/@.*//')
+  
+  # For version tags (v4.5.0, etc.), default to stable fixtures
+  if [[ "$tag" =~ ^v[0-9] ]]; then
+    echo "fixtures_stable.tar.gz"
+    return
+  fi
+  
+  # For prefixed tags, use the prefix in the asset name
+  if [[ -n "$prefix" && "$prefix" != "$tag" ]]; then
+    echo "fixtures_${prefix}.tar.gz"
+    return
+  fi
+  
+  # Fallback to benchmark
+  echo "fixtures_benchmark.tar.gz"
+}
+
 # Helper function to make authenticated GitHub API calls
 github_api_curl() {
   local url="$1"
@@ -74,6 +97,10 @@ else
 fi
 
 API_URL="https://api.github.com/repos/${REPO}/releases/tags/${TAG}"
+
+ASSET_NAME=$(determine_asset_name "${TAG}")
+
+echo "ℹ️  Using asset name: ${ASSET_NAME}"
 
 echo "🔎  Getting release info for ${TAG} …"
 DOWNLOAD_URL=$(
