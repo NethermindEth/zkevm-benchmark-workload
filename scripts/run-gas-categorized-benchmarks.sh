@@ -234,7 +234,7 @@ run_benchmark() {
     fi
     
     # Run the benchmark
-    if cargo run --release --bin ere-hosts --features sp1 -- -r "$RESOURCE" -a "$ACTION" $force_arg -o "$metrics_dir" "$GUEST"; then
+    if cargo run --release --bin ere-hosts --features sp1 -- -r "$RESOURCE" -a "$ACTION" $force_arg -o "$metrics_dir" "$GUEST" --input-folder "$input_dir"; then
         print_status "$GREEN" "✅ Successfully completed benchmark for $category"
         
         # Count the generated metric files
@@ -289,7 +289,7 @@ main() {
                 force_arg="--force-rerun"
             fi
             
-            print_status "$BLUE" "  cargo run --release --bin ere-hosts --features sp1 -- -r $RESOURCE -a $ACTION $force_arg -o \"$metrics_dir\" $GUEST"
+            print_status "$BLUE" "  cargo run --release --bin ere-hosts --features sp1 -- -r $RESOURCE -a $ACTION $force_arg -o \"$metrics_dir\" $GUEST --input-folder \"$input_dir\""
             print_status "$BLUE" "  # Input: $input_dir"
         done
         
