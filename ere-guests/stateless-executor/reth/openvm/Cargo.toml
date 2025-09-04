@@ -1,5 +1,5 @@
 [package]
-name = "reth-openvm-guest"
+name = "stateless-executor-reth-openvm-guest"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

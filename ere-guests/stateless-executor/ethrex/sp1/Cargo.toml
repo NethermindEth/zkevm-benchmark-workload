@@ -1,6 +1,6 @@
 [package]
 version = "0.1.0"
-name = "ethrex-sp1-stateless-validator"
+name = "stateless-executor-ethrex-sp1-guest"
 edition = "2024"
 
 [workspace]

@@ -1,5 +1,5 @@
 [package]
-name = "reth-pico-guest"
+name = "stateless-executor-reth-pico-guest"
 version = "0.1.0"
 edition = "2024"
 

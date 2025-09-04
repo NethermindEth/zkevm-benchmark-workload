@@ -1,5 +1,5 @@
 [package]
-name = "reth-risc0-stateless-validator"
+name = "stateless-executor-reth-risc0-guest"
 version = "0.1.0"
 edition = "2021"
 

@@ -1,5 +1,5 @@
 [package]
-name = "reth-zisk-guest"
+name = "stateless-executor-reth-zisk-guest"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

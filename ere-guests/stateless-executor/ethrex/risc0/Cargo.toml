@@ -1,5 +1,5 @@
 [package]
-name = "ethrex-risc0-stateless-validator"
+name = "stateless-executor-ethrex-risc0-guest"
 version = "0.1.0"
 edition = "2024"
 
