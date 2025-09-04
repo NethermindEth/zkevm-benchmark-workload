@@ -16,6 +16,8 @@
 #   --action <ACTION> Benchmark action to run (default: prove)
 #   --resource <RESOURCE> Resource type to use (default: gpu)
 #   --guest <GUEST> Guest program type (default: stateless-executor)
+#   --zkvm <ZKVM> zkVM implementation to use (default: risc0)
+#   --execution-client <CLIENT> Execution client to use (default: reth)
 #
 # Examples:
 #   # Run all gas categories with default settings
@@ -23,6 +25,9 @@
 #   
 #   # Run with custom action and resource
 #   ./scripts/run-gas-categorized-benchmarks.sh --action execute --resource cpu
+#   
+#   # Run with specific zkVM and execution client
+#   ./scripts/run-gas-categorized-benchmarks.sh --zkvm sp1 --execution-client ethrex
 #   
 #   # Preview what would be executed
 #   ./scripts/run-gas-categorized-benchmarks.sh --dry-run
@@ -45,6 +50,8 @@ FORCE_RERUN=true
 ACTION="prove"
 RESOURCE="gpu"
 GUEST="stateless-executor"
+ZKVM="risc0"
+EXECUTION_CLIENT="reth"
 BASE_INPUT_DIR="./zkevm-fixtures-input"
 BASE_METRICS_DIR="./zkevm-metrics"
 
@@ -88,17 +95,24 @@ show_help() {
     echo "  --action <ACTION>      Benchmark action to run (default: prove)"
     echo "  --resource <RESOURCE>  Resource type to use (default: gpu)"
     echo "  --guest <GUEST>        Guest program type (default: stateless-executor)"
+    echo "  --zkvm <ZKVM>          zkVM implementation to use (default: risc0)"
+    echo "  --execution-client <CLIENT> Execution client to use (default: reth)"
 echo ""
 echo "Available zkVM Features:"
-echo "  - sp1: SP1 zkVM implementation (default)"
-echo "  - risc0: RISC0 zkVM implementation"
+echo "  - risc0: RISC0 zkVM implementation (default)"
+echo "  - sp1: SP1 zkVM implementation"
 echo "  - openvm: OpenVM zkVM implementation"
 echo "  - pico: Pico zkVM implementation"
 echo "  - zisk: Zisk zkVM implementation"
 echo ""
+echo "Available Execution Clients:"
+echo "  - reth: Reth execution client (default)"
+echo "  - ethrex: Ethrex execution client"
+echo ""
 echo "Examples:"
     echo "  $0                                    # Run all gas categories with defaults"
     echo "  $0 --action execute --resource cpu    # Run with custom action and resource"
+    echo "  $0 --zkvm sp1 --execution-client ethrex # Run with specific zkVM and client"
     echo "  $0 --dry-run                          # Show what would be executed"
     echo ""
     echo "Gas Categories:"
@@ -142,6 +156,14 @@ while [[ $# -gt 0 ]]; do
             GUEST="$2"
             shift 2
             ;;
+        --zkvm)
+            ZKVM="$2"
+            shift 2
+            ;;
+        --execution-client)
+            EXECUTION_CLIENT="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown option: $1"
             show_help
@@ -174,8 +196,8 @@ check_workspace() {
 
 # Function to build the project if needed
 build_project() {
-    print_status "$BLUE" "🔨 Building ere-hosts with SP1 feature..."
-    cargo build --release --bin ere-hosts --features sp1
+    print_status "$BLUE" "🔨 Building ere-hosts with $ZKVM feature..."
+    cargo build --release --bin ere-hosts --features "$ZKVM"
     if [ $? -eq 0 ]; then
         print_status "$GREEN" "✅ Build successful"
     else
@@ -234,7 +256,7 @@ run_benchmark() {
     fi
     
     # Run the benchmark
-    if cargo run --release --bin ere-hosts --features sp1 -- -r "$RESOURCE" -a "$ACTION" $force_arg -o "$metrics_dir" "$GUEST" --input-folder "$input_dir"; then
+    if cargo run --release --bin ere-hosts -- --zkvms "$ZKVM" -a "$ACTION" -r "$RESOURCE" $force_arg -o "$metrics_dir" "$GUEST" --input-folder "$input_dir" --execution-client "$EXECUTION_CLIENT"; then
         print_status "$GREEN" "✅ Successfully completed benchmark for $category"
         
         # Count the generated metric files
@@ -277,6 +299,8 @@ main() {
         print_status "$BLUE" "📊 Action: $ACTION"
         print_status "$BLUE" "🖥️  Resource: $RESOURCE"
         print_status "$BLUE" "🎯 Guest: $GUEST"
+        print_status "$BLUE" "🔧 zkVM: $ZKVM"
+        print_status "$BLUE" "⚙️  Execution Client: $EXECUTION_CLIENT"
         print_status "$BLUE" "🔄 Force Rerun: $FORCE_RERUN"
         print_status "$BLUE" "\n📋 Would execute the following commands:"
         
@@ -289,7 +313,7 @@ main() {
                 force_arg="--force-rerun"
             fi
             
-            print_status "$BLUE" "  cargo run --release --bin ere-hosts --features sp1 -- -r $RESOURCE -a $ACTION $force_arg -o \"$metrics_dir\" $GUEST --input-folder \"$input_dir\""
+            print_status "$BLUE" "  cargo run --release --bin ere-hosts -- --zkvms $ZKVM -a $ACTION -r $RESOURCE $force_arg -o \"$metrics_dir\" $GUEST --input-folder \"$input_dir\" --execution-client $EXECUTION_CLIENT"
             print_status "$BLUE" "  # Input: $input_dir"
         done
         
@@ -301,6 +325,8 @@ main() {
     print_status "$BLUE" "📊 Action: $ACTION"
     print_status "$BLUE" "🖥️  Resource: $RESOURCE"
     print_status "$BLUE" "🎯 Guest: $GUEST"
+    print_status "$BLUE" "🔧 zkVM: $ZKVM"
+    print_status "$BLUE" "⚙️  Execution Client: $EXECUTION_CLIENT"
     print_status "$BLUE" "🔄 Force Rerun: $FORCE_RERUN"
     
     # Pre-flight checks
