@@ -96,10 +96,10 @@ enum ExecutionClient {
 }
 
 impl ExecutionClient {
-    const fn guest_rel_path(&self) -> &str {
+    fn guest_rel_path(&self, guest_program: &str) -> String {
         match self {
-            Self::Reth => "stateless-validator/reth",
-            Self::Ethrex => "stateless-validator/ethrex",
+            Self::Reth => format!("{}/reth", guest_program),
+            Self::Ethrex => format!("{}/ethrex", guest_program),
         }
     }
 }
@@ -151,6 +151,7 @@ impl From<ExecutionClient> for stateless_validator::ExecutionClient {
         }
     }
 }
+
 impl From<ExecutionClient> for stateless_executor::ExecutionClient {
     fn from(client: ExecutionClient) -> Self {
         match client {
@@ -159,7 +160,6 @@ impl From<ExecutionClient> for stateless_executor::ExecutionClient {
         }
     }
 }
-
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt()
@@ -195,7 +195,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 input_folder.as_path(),
                 (*execution_client).into(),
             )?;
-            let guest_relative = Path::new(execution_client.guest_rel_path());
+            let guest_path = execution_client.guest_rel_path("stateless-executor");
+            let guest_relative = Path::new(&guest_path);
             let apply_patches = matches!(execution_client, ExecutionClient::Reth);
             let zkvms = get_zkvm_instances(
                 &cli.zkvms,
@@ -220,7 +221,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 input_folder.as_path(),
                 (*execution_client).into(),
             )?;
-            let guest_relative = Path::new(execution_client.guest_rel_path());
+            let guest_path = execution_client.guest_rel_path("stateless-validator");
+            let guest_relative = Path::new(&guest_path);
             let apply_patches = matches!(execution_client, ExecutionClient::Reth);
             let zkvms = get_zkvm_instances(
                 &cli.zkvms,
