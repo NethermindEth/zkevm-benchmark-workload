@@ -112,14 +112,14 @@ ere-dockerized = { git = "https://github.com/eth-applied-research-group/ere", re
 
 # branch is kw/zkevm-benchmark-workload-repo
 # NOTE: We are using a branch of a branch that has not yet been merged into master.
-ef-tests = { git = "https://github.com/kevaundray/reth", rev = "fa3efe112aaaf1d18b56212d537a83c3cc681782" }
-reth-ethereum-primitives = { git = "https://github.com/kevaundray/reth", rev = "fa3efe112aaaf1d18b56212d537a83c3cc681782" }
-reth-stateless = { git = "https://github.com/kevaundray/reth", rev = "fa3efe112aaaf1d18b56212d537a83c3cc681782" }
-reth-rpc-api = { git = "https://github.com/kevaundray/reth", rev = "fa3efe112aaaf1d18b56212d537a83c3cc681782" }
-reth-primitives-traits = { git = "https://github.com/kevaundray/reth", rev = "fa3efe112aaaf1d18b56212d537a83c3cc681782" }
-reth-errors = { git = "https://github.com/kevaundray/reth", rev = "fa3efe112aaaf1d18b56212d537a83c3cc681782" }
-reth-trie-common = { git = "https://github.com/kevaundray/reth", rev = "fa3efe112aaaf1d18b56212d537a83c3cc681782" }
-reth-chainspec = { git = "https://github.com/kevaundray/reth", rev = "fa3efe112aaaf1d18b56212d537a83c3cc681782" }
+ef-tests = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
+reth-ethereum-primitives = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
+reth-stateless = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
+reth-rpc-api = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
+reth-primitives-traits = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
+reth-errors = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
+reth-trie-common = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
+reth-chainspec = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
 
 ethrex-zkvm_interface = { git = "https://github.com/jsign/ethrex.git", rev = "d77ca445024800e981dab5ddcc69f4d55622d6c1", package = "zkvm_interface" }
 ethrex-common = { git = "https://github.com/jsign/ethrex.git", rev = "d77ca445024800e981dab5ddcc69f4d55622d6c1", default-features = false }
