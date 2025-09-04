@@ -6,6 +6,7 @@ use benchmark_runner::{
     block_encoding_length_program, empty_program,
     runner::{Action, RunConfig, get_zkvm_instances, run_benchmark},
     stateless_validator::{self},
+    stateless_executor::{self},
 };
 use clap::{Parser, Subcommand, ValueEnum};
 use ere_dockerized::ErezkVM;
@@ -46,6 +47,15 @@ struct Cli {
 
 #[derive(Subcommand, Clone, Debug)]
 enum GuestProgramCommand {
+    /// Ethereum Stateless Executor
+    StatelessExecutor {
+        /// Input folder for benchmark fixtures
+        #[arg(short, long, default_value = "zkevm-fixtures-input")]
+        input_folder: PathBuf,
+        #[arg(short, long)]
+        execution_client: ExecutionClient,
+    },
+    /// Empty program
     /// Ethereum Stateless Validator
     StatelessValidator {
         /// Input folder for benchmark fixtures
@@ -164,6 +174,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let workspace_dir = workspace_root().join("ere-guests");
     match &cli.guest_program {
+        GuestProgramCommand::StatelessExecutor {
+            input_folder,
+            execution_client,
+        } => {
+            info!(
+                "Running stateless-executor benchmark for input folder: {}",
+                input_folder.display()
+            );
+            let guest_io = stateless_executor::stateless_executor_inputs(
+                input_folder.as_path(),
+                (*execution_client).into(),
+            )?;
+            let guest_relative = Path::new(execution_client.guest_rel_path());
+            let apply_patches = matches!(execution_client, ExecutionClient::Reth);
+            let zkvms = get_zkvm_instances(
+                &cli.zkvms,
+                &workspace_dir,
+                guest_relative,
+                resource,
+                apply_patches,
+            )?;
+            for zkvm in zkvms {
+                run_benchmark(&zkvm, &config, guest_io.clone())?;
+            }
+        }
         GuestProgramCommand::StatelessValidator {
             input_folder,
             execution_client,
