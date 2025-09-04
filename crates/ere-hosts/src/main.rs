@@ -151,6 +151,15 @@ impl From<ExecutionClient> for stateless_validator::ExecutionClient {
         }
     }
 }
+impl From<ExecutionClient> for stateless_executor::ExecutionClient {
+    fn from(client: ExecutionClient) -> Self {
+        match client {
+            ExecutionClient::Reth => Self::Reth,
+            ExecutionClient::Ethrex => Self::Ethrex,
+        }
+    }
+}
+
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt()
