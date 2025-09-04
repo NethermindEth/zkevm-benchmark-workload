@@ -197,7 +197,7 @@ check_workspace() {
 # Function to build the project if needed
 build_project() {
     print_status "$BLUE" "🔨 Building ere-hosts with $ZKVM feature..."
-    cargo build --release --bin ere-hosts --features "$ZKVM"
+    cargo build --release --bin ere-hosts
     if [ $? -eq 0 ]; then
         print_status "$GREEN" "✅ Build successful"
     else
