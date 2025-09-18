@@ -24,6 +24,38 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  check-precompile-patches:
+    name: Check ${{ matrix.zkVM }} unused precompile patches
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - zkVM: reth-sp1-stateless-validator
+            xtask: sp1
+          - zkVM: reth-risc0-stateless-validator
+            xtask: risc0
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ere-guests
+
+      - name: Check for unused [patch] entries
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo ${{ matrix.xtask }} 
+          cd ere-guests
+          if cargo tree -p ${{ matrix.zkVM }} 2>&1 | grep -F "was not used in the crate graph"; then
+            exit 1
+          fi
 
   check-non-ere-hosts:
     name: Checks on non ere-hosts crates
@@ -39,8 +71,6 @@ jobs:
       
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
-        with:
-          key: base 
 
       - name: Check formatting
         run: cargo fmt --check --all
@@ -56,10 +86,6 @@ jobs:
  
   check-ere-host:
     name: Checks crate ere-hosts
-    strategy:
-      fail-fast: false
-      matrix:
-        zkvm: [sp1, risc0, openvm, zisk] # Skip `pico`, see https://github.com/eth-act/zkevm-benchmark-workload/issues/43.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -72,11 +98,9 @@ jobs:
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.zkvm }}
 
-      - name: Cargo check (with ${{ matrix.zkvm }} enabled)
-        run: cargo check --features ${{ matrix.zkvm }} -p ere-hosts
+      - name: Cargo check
+        run: cargo check -p ere-hosts
 
       - name: Check clippy
-        run: cargo clippy --bins --examples --tests --benches --features ${{ matrix.zkvm }} -p ere-hosts 
+        run: cargo clippy --bins --examples --tests --benches -p ere-hosts 

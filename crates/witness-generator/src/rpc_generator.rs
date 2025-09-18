@@ -1,14 +1,15 @@
 use crate::{BlockAndWitness, blocks_and_witnesses::WitnessGenerator};
 use alloy_eips::BlockNumberOrTag;
+use alloy_genesis::ChainConfig;
 use alloy_rpc_types_eth::{Block, Header, Receipt, Transaction, TransactionRequest};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use guest_libs::chainconfig::ChainConfig;
 use http::{HeaderName, HeaderValue};
 use jsonrpsee::{
     http_client::{HeaderMap, HttpClient, HttpClientBuilder},
     tracing::{error, info},
 };
+use reth_chainspec::{Chain, HOLESKY, HOODI, MAINNET, NamedChain, SEPOLIA};
 use reth_ethereum_primitives::TransactionSigned;
 use reth_rpc_api::{DebugApiClient, EthApiClient};
 use reth_stateless::StatelessInput;
@@ -74,16 +75,31 @@ impl RpcBlocksAndWitnessesBuilder {
     }
 
     /// Builds the configured `RpcBlocksAndWitnesses`.
-    pub fn build(self) -> Result<RpcBlocksAndWitnesses> {
+    pub async fn build(self) -> Result<RpcBlocksAndWitnesses> {
         let client = HttpClientBuilder::default()
             .set_headers(self.header_map)
             .max_response_size(1 << 30)
             .build(&self.url)?;
 
+        let chain_id = EthApiClient::<(), (), (), (), ()>::chain_id(&client)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("Failed to fetch chain ID from RPC"))?;
+
+        let chain = Chain::from_id(chain_id.to());
+
+        let chain_config = match chain.named() {
+            Some(NamedChain::Mainnet) => MAINNET.genesis.config.clone(),
+            Some(NamedChain::Sepolia) => SEPOLIA.genesis.config.clone(),
+            Some(NamedChain::Hoodi) => HOODI.genesis.config.clone(),
+            Some(NamedChain::Holesky) => HOLESKY.genesis.config.clone(),
+            _ => {
+                return Err(anyhow::anyhow!("Unsupported chain ID: {}", chain_id));
+            }
+        };
+
         Ok(RpcBlocksAndWitnesses {
             client,
-            // TODO: make this dynamic based on the RPC
-            chain_config: ChainConfig::Mainnet,
+            chain_config,
             last_n_blocks: self.last_n_blocks,
             block: self.block,
             stop: self.stop,
@@ -131,7 +147,7 @@ impl WitnessGenerator for RpcBlocksAndWitnesses {
         let count = if self.last_n_blocks.is_some() || self.block.is_some() {
             let bws = self.generate().await?;
             self.save_to_path(&bws, path)?;
-            1
+            bws.len()
         } else {
             self.fetch_live(path)
                 .await
@@ -184,10 +200,11 @@ impl RpcBlocksAndWitnesses {
 
         let mut blocks_and_witnesses = Vec::with_capacity(hashes.len());
         for (block_num, block_hash) in hashes {
-            let witness = self
-                .client
-                .debug_execution_witness_by_block_hash(block_hash)
-                .await?;
+            let witness = DebugApiClient::<()>::debug_execution_witness_by_block_hash(
+                &self.client,
+                block_hash,
+            )
+            .await?;
             let block = EthApiClient::<
                 TransactionRequest,
                 Transaction,
@@ -203,8 +220,9 @@ impl RpcBlocksAndWitnesses {
                 block_and_witness: StatelessInput {
                     block: block.into_consensus(),
                     witness,
+                    chain_config: self.chain_config.clone(),
                 },
-                chain_config: self.chain_config,
+                success: true,
             });
         }
 
@@ -220,10 +238,11 @@ impl RpcBlocksAndWitnesses {
     /// Returns an error if the RPC call fails or if the block cannot be found.
     async fn fetch_specific_block(&self, block_num: u64) -> Result<BlockAndWitness> {
         // Fetch the execution witness for the given block
-        let witness = self
-            .client
-            .debug_execution_witness(BlockNumberOrTag::Number(block_num))
-            .await?;
+        let witness = DebugApiClient::<()>::debug_execution_witness(
+            &self.client,
+            BlockNumberOrTag::Number(block_num),
+        )
+        .await?;
 
         // Fetch the block details
         let block =
@@ -242,8 +261,9 @@ impl RpcBlocksAndWitnesses {
             block_and_witness: StatelessInput {
                 block: block.into_consensus(),
                 witness,
+                chain_config: self.chain_config.clone(),
             },
-            chain_config: self.chain_config,
+            success: true,
         };
 
         Ok(bw)
@@ -455,6 +475,7 @@ mod test {
         let rpc_bw = build_base_rpc()
             .last_n_blocks(2)
             .build()
+            .await
             .expect("Failed to build RPC Blocks and Witnesses");
 
         // Generate to Vector
@@ -496,7 +517,7 @@ mod test {
             Receipt,
             Header,
         >::block_by_number(
-            &build_base_rpc().build().unwrap().client,
+            &build_base_rpc().build().await.unwrap().client,
             BlockNumberOrTag::Latest,
             false,
         )
@@ -512,6 +533,7 @@ mod test {
         let rpc_bw = build_base_rpc()
             .block(block_number)
             .build()
+            .await
             .expect("Failed to build RPC Blocks and Witnesses");
 
         // Generate to Vector
@@ -568,6 +590,7 @@ mod test {
         build_base_rpc()
             .listen(stop_token)
             .build()
+            .await
             .expect("Failed to build RPC Blocks and Witnesses")
             .generate_to_path(target_dir.path())
             .await

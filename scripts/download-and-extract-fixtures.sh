@@ -26,6 +26,29 @@ set -euo pipefail
 REPO="ethereum/execution-spec-tests"
 ASSET_NAME="fixtures_benchmark.tar.gz"
 
+# Function to determine the correct asset name based on the tag
+determine_asset_name() {
+  local tag="$1"
+  
+  # Extract the prefix from the tag (e.g., "benchmark", "zkevm", "verkle", etc.)
+  local prefix=$(echo "$tag" | sed 's/@.*//')
+  
+  # For version tags (v4.5.0, etc.), default to stable fixtures
+  if [[ "$tag" =~ ^v[0-9] ]]; then
+    echo "fixtures_stable.tar.gz"
+    return
+  fi
+  
+  # For prefixed tags, use the prefix in the asset name
+  if [[ -n "$prefix" && "$prefix" != "$tag" ]]; then
+    echo "fixtures_${prefix}.tar.gz"
+    return
+  fi
+  
+  # Fallback to benchmark
+  echo "fixtures_benchmark.tar.gz"
+}
+
 # Helper function to make authenticated GitHub API calls
 github_api_curl() {
   local url="$1"
@@ -75,6 +98,10 @@ fi
 
 API_URL="https://api.github.com/repos/${REPO}/releases/tags/${TAG}"
 
+ASSET_NAME=$(determine_asset_name "${TAG}")
+
+echo "ℹ️  Using asset name: ${ASSET_NAME}"
+
 echo "🔎  Getting release info for ${TAG} …"
 DOWNLOAD_URL=$(
   github_api_curl "${API_URL}" |
@@ -86,6 +113,13 @@ if [[ -z "${DOWNLOAD_URL}" || "${DOWNLOAD_URL}" == "null" ]]; then
   exit 1
 fi
 
+# Check if fixtures already exist locally
+if [ -d "${DEST_DIR}" ] && [ "$(ls -A "${DEST_DIR}" 2>/dev/null)" ]; then
+  echo "✅  Fixtures already exist in ${DEST_DIR}, skipping download"
+  echo "✅  Fixtures ready in ${DEST_DIR}"
+  exit 0
+fi
+
 TMP_DIR=$(mktemp -d)
 cleanup() {
   rm -rf "${TMP_DIR}"
@@ -94,7 +128,38 @@ trap cleanup EXIT
 TMP_TAR="${TMP_DIR}/${ASSET_NAME}"
 
 echo "⬇️  Downloading ${ASSET_NAME} to temporary directory …"
-curl -L -o "${TMP_TAR}" "${DOWNLOAD_URL}"
+# Try multiple download strategies with retries
+download_success=false
+
+# Strategy 1: HTTP/1.1 with retries
+echo "🔄  Trying HTTP/1.1 download..."
+if curl -L --http1.1 --retry 3 --retry-delay 2 --retry-max-time 300 -o "${TMP_TAR}" "${DOWNLOAD_URL}"; then
+  download_success=true
+fi
+
+# Strategy 2: HTTP/2 with different options if HTTP/1.1 failed
+if [ "$download_success" = false ]; then
+  echo "🔄  HTTP/1.1 failed, trying HTTP/2 with different options..."
+  if curl -L --http2 --retry 3 --retry-delay 5 --retry-max-time 300 --max-time 600 -o "${TMP_TAR}" "${DOWNLOAD_URL}"; then
+    download_success=true
+  fi
+fi
+
+# Strategy 3: wget as fallback if curl fails
+if [ "$download_success" = false ]; then
+  echo "🔄  curl failed, trying wget as fallback..."
+  if command -v wget >/dev/null 2>&1; then
+    if wget --timeout=300 --tries=3 --waitretry=5 -O "${TMP_TAR}" "${DOWNLOAD_URL}"; then
+      download_success=true
+    fi
+  fi
+fi
+
+# Check if any download strategy succeeded
+if [ "$download_success" = false ]; then
+  echo "❌  All download strategies failed"
+  exit 1
+fi
 
 echo "📂  Extracting to ${DEST_DIR}/"
 mkdir -p "${DEST_DIR}"
