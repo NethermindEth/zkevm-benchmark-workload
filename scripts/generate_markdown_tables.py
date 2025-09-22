@@ -86,6 +86,21 @@ class BenchmarkMetrics:
         if self.proving_metrics and "success" in self.proving_metrics:
             return self.proving_metrics["success"].get("proving_time_ms")
         return None
+    
+    def get_peak_memory_bytes(self) -> Optional[int]:
+        if self.proving_metrics and "success" in self.proving_metrics:
+            return self.proving_metrics["success"].get("peak_memory_usage_bytes")
+        return None
+    
+    def get_average_memory_bytes(self) -> Optional[int]:
+        if self.proving_metrics and "success" in self.proving_metrics:
+            return self.proving_metrics["success"].get("average_memory_usage_bytes")
+        return None
+    
+    def get_initial_memory_bytes(self) -> Optional[int]:
+        if self.proving_metrics and "success" in self.proving_metrics:
+            return self.proving_metrics["success"].get("initial_memory_usage_bytes")
+        return None
 
 def load_metrics_from_folder(folder_path: str) -> Dict[str, BenchmarkMetrics]:
     """Load all metric files from a folder."""
@@ -216,8 +231,8 @@ def generate_proving_table(metrics_dict: Dict[str, BenchmarkMetrics]) -> str:
     if not any(m.has_proving() for m in metrics_dict.values()):
         return "## Proving Metrics\n\nNo proving metrics found.\n\n"
     
-    header = "| Benchmark | Gas Category | Proof Size (bytes) | Proving Time (ms) | Proving Time (s) |\n"
-    separator = "|---|---|---|---|---|\n"
+    header = "| Benchmark | Gas Category | Proof Size (bytes) | Proving Time (ms) | Proving Time (s) | Peak Memory (MB) | Avg Memory (MB) | Initial Memory (MB) |\n"
+    separator = "|---|---|---|---|---|---|---|---|\n"
     
     rows = []
     for name, metric in sorted(metrics_dict.items()):
@@ -228,12 +243,28 @@ def generate_proving_table(metrics_dict: Dict[str, BenchmarkMetrics]) -> str:
         proving_time_ms = metric.get_proving_time_ms()
         proving_time_s = proving_time_ms / 1000.0 if proving_time_ms else None
         
+        # Memory metrics
+        peak_memory_bytes = metric.get_peak_memory_bytes()
+        avg_memory_bytes = metric.get_average_memory_bytes()
+        initial_memory_bytes = metric.get_initial_memory_bytes()
+        
+        # Convert bytes to MB
+        peak_memory_mb = peak_memory_bytes / (1024 * 1024) if peak_memory_bytes else None
+        avg_memory_mb = avg_memory_bytes / (1024 * 1024) if avg_memory_bytes else None
+        initial_memory_mb = initial_memory_bytes / (1024 * 1024) if initial_memory_bytes else None
+        
         row = f"| {name} | {metric.gas_category} | "
         row += f"{proof_size:,}" if proof_size else "N/A"
         row += " | "
         row += f"{proving_time_ms:,.1f}" if proving_time_ms else "N/A"
         row += " | "
         row += f"{proving_time_s:,.2f}" if proving_time_s else "N/A"
+        row += " | "
+        row += f"{peak_memory_mb:,.1f}" if peak_memory_mb else "N/A"
+        row += " | "
+        row += f"{avg_memory_mb:,.1f}" if avg_memory_mb else "N/A"
+        row += " | "
+        row += f"{initial_memory_mb:,.1f}" if initial_memory_mb else "N/A"
         row += " |\n"
         rows.append(row)
     
@@ -283,11 +314,15 @@ def generate_statistics_section(metrics_dict: Dict[str, BenchmarkMetrics]) -> st
     if proving_metrics:
         proof_sizes = [m.get_proof_size() for m in proving_metrics if m.get_proof_size()]
         proving_times = [m.get_proving_time_ms() for m in proving_metrics if m.get_proving_time_ms()]
+        peak_memories = [m.get_peak_memory_bytes() for m in proving_metrics if m.get_peak_memory_bytes()]
         
         if proof_sizes:
             stats.append("### Proving Statistics")
             stats.append(f"- **Proof Size**: Min: {min(proof_sizes):,} bytes, Max: {max(proof_sizes):,} bytes, Avg: {statistics.mean(proof_sizes):,.0f} bytes")
             stats.append(f"- **Proving Time**: Min: {min(proving_times):.1f}ms, Max: {max(proving_times):.1f}ms, Avg: {statistics.mean(proving_times):.1f}ms")
+            if peak_memories:
+                peak_memories_mb = [m / (1024 * 1024) for m in peak_memories]
+                stats.append(f"- **Peak Memory**: Min: {min(peak_memories_mb):.1f}MB, Max: {max(peak_memories_mb):.1f}MB, Avg: {statistics.mean(peak_memories_mb):.1f}MB")
             stats.append("")
     
     return "## Statistics\n\n" + "\n".join(stats) + "\n" if stats else "## Statistics\n\nNo statistical data available.\n\n"
