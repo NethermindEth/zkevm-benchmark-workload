@@ -1,18 +1,62 @@
 # zkEVM Benchmark Results
 
-Generated on: 2025-09-20 21:00:26
+Generated on: 2025-09-22 13:42:53
 
 Comparing 2 metrics folders:
+- zkevm-metrics-risc0-1M (Gas: 1M)
 - zkevm-metrics-sp1-1M (Gas: 1M)
-- zkevm-metrics-1M (Gas: 1M)
+
+## Gas Category: 1M
+
+Source: zkevm-metrics-risc0-1M
+
+## Proving Metrics
+
+| Benchmark | Gas Category | Proof Size (bytes) | Proving Time (ms) | Proving Time (s) |
+|---|---|---|---|---|
+| risc0-v3.0.1/test_worst_bytecode.py::test_worst_bytecode_single_opcode[fork_Prague-benchmark-gas-value_1M-blockchain_test-opcode_EXTCODESIZE] |  | 223,662 | 345,054.0 | 345.05 |
+| risc0-v3.0.1/test_worst_bytecode.py::test_worst_create[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-0 bytes with value-opcode_CREATE] |  | 223,662 | 6,944.0 | 6.94 |
+| risc0-v3.0.1/test_worst_bytecode.py::test_worst_create[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-0 bytes without value-opcode_CREATE2] |  | 223,662 | 6,906.0 | 6.91 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_binop_simple[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_SUB-] |  | 223,662 | 42,189.0 | 42.19 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_calldataload[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-zero-loop] |  | 223,662 | 97,786.0 | 97.79 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_calldatasize[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-calldata_length_10000] |  | 223,662 | 29,477.0 | 29.48 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_callvalue[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-from_origin_True-non_zero_value_True] |  | 223,662 | 28,147.0 | 28.15 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_jumps[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test] |  | 223,662 | 22,223.0 | 22.22 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_memory_access[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-big_memory_expansion_True-offset_initialized_False-offset_0-opcode_MLOAD] |  | 223,662 | 45,316.0 | 45.32 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_memory_access[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-big_memory_expansion_True-offset_initialized_False-offset_1-opcode_MLOAD] |  | 223,662 | 51,779.0 | 51.78 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_mod[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-op_SMOD-mod_bits_63] |  | 223,662 | 164,655.0 | 164.66 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_600_gas_exp_heavy] |  | 223,662 | 1,466,185.0 | 1,466.18 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_even_8b_exp_896] |  | 223,662 | 2,561,696.0 | 2,561.70 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_pawel_2] |  | 223,662 | 1,385,688.0 | 1,385.69 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_marius_1_even] |  | 223,662 | 1,042,709.0 | 1,042.71 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_nagydani_3_pow_0x10001] |  | 223,662 | 744,491.0 | 744.49 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_pawel_1_exp_heavy] |  | 223,662 | 2,061,242.0 | 2,061.24 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_precompile_fixed_cost[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-bn128_mul] |  | 223,662 | 359,648.0 | 359.65 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_push[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_PUSH20] |  | 223,662 | 54,134.0 | 54.13 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_push[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_PUSH25] |  | 223,662 | 64,835.0 | 64.83 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_push[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_PUSH28] |  | 223,662 | 59,734.0 | 59.73 |
+| risc0-v3.0.1/test_worst_compute.py::test_worst_tload[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-val_mut_False-key_mut_False] |  | 223,662 | 9,700.0 | 9.70 |
+| risc0-v3.0.1/test_worst_memory.py::test_worst_calldatacopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-non_zero_data_False-fixed_src_dst_True-100 bytes-call] |  | 223,662 | 29,394.0 | 29.39 |
+| risc0-v3.0.1/test_worst_memory.py::test_worst_codecopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_src_dst_False-0.50x max code size] |  | 223,662 | 22,069.0 | 22.07 |
+| risc0-v3.0.1/test_worst_memory.py::test_worst_codecopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_src_dst_False-max code size] |  | 223,662 | 24,120.0 | 24.12 |
+| risc0-v3.0.1/test_worst_memory.py::test_worst_codecopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_src_dst_True-0.75x max code size] |  | 223,662 | 15,282.0 | 15.28 |
+| risc0-v3.0.1/test_worst_memory.py::test_worst_returndatacopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_dst_True-0 bytes] |  | 223,662 | 34,837.0 | 34.84 |
+| risc0-v3.0.1/test_worst_memory.py::test_worst_returndatacopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_dst_True-1MiB] |  | 223,662 | 7,575.0 | 7.58 |
+| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_False-non_zero_topic-1_MiB_non_zero_data-log2] |  | 223,662 | 5,843.0 | 5.84 |
+| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_False-zeros_topic-0_bytes_data-log2] |  | 223,662 | 7,615.0 | 7.62 |
+| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_False-zeros_topic-1_MiB_zeros_data-log1] |  | 223,662 | 5,726.0 | 5.73 |
+| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_False-zeros_topic-1_MiB_zeros_data-log3] |  | 223,662 | 6,060.0 | 6.06 |
+| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_True-non_zero_topic-0_bytes_data-log2] |  | 223,662 | 7,075.0 | 7.08 |
+| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_True-non_zero_topic-0_bytes_data-log4] |  | 223,662 | 6,586.0 | 6.59 |
+| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_True-zeros_topic-1_MiB_non_zero_data-log3] |  | 223,662 | 5,643.0 | 5.64 |
+| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_blockhash[fork_Prague-benchmark-gas-value_1M-blockchain_test] |  | 223,662 | 42,904.0 | 42.90 |
+| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_extcodecopy_warm[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-512] |  | 223,662 | 20,116.0 | 20.12 |
+| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_selfdestruct_created[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-value_bearing_False] |  | 223,662 | 6,279.0 | 6.28 |
+| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_storage_access_cold[fork_Prague-benchmark-gas-value_1M-blockchain_test-absent_slots_True-SSTORE same value, revert] |  | 223,662 | 5,838.0 | 5.84 |
 
 ## Gas Category: 1M
 
 Source: zkevm-metrics-sp1-1M
-
-## Execution Metrics
-
-No execution metrics found.
 
 ## Proving Metrics
 
@@ -228,146 +272,4 @@ No execution metrics found.
 | sp1-v5.1.0/test_worst_stateful_opcodes.py::test_worst_storage_access_cold[fork_Prague-benchmark-gas-value_1M-blockchain_test-absent_slots_True-SSTORE same value, revert] |  | 1,477,259 | 11,741.0 | 11.74 |
 | sp1-v5.1.0/test_worst_stateful_opcodes.py::test_worst_storage_access_warm[fork_Prague-benchmark-gas-value_1M-blockchain_test-SLOAD] |  | 1,477,259 | 17,096.0 | 17.10 |
 | sp1-v5.1.0/test_worst_stateful_opcodes.py::test_worst_storage_access_warm[fork_Prague-benchmark-gas-value_1M-blockchain_test-SSTORE new value] |  | 1,477,259 | 29,888.0 | 29.89 |
-
-## Gas Category: 1M
-
-Source: zkevm-metrics-1M
-
-## Execution Metrics
-
-No execution metrics found.
-
-## Proving Metrics
-
-| Benchmark | Gas Category | Proof Size (bytes) | Proving Time (ms) | Proving Time (s) |
-|---|---|---|---|---|
-| risc0-v3.0.1/test_worst_blocks.py::test_block_full_of_ether_transfers[fork_Prague-benchmark-gas-value_1M-blockchain_test-case_id_a_to_a] |  | 223,662 | 52,650.0 | 52.65 |
-| risc0-v3.0.1/test_worst_blocks.py::test_block_full_of_ether_transfers[fork_Prague-benchmark-gas-value_1M-blockchain_test-case_id_a_to_b] |  | 223,662 | 49,318.0 | 49.32 |
-| risc0-v3.0.1/test_worst_bytecode.py::test_worst_bytecode_single_opcode[fork_Prague-benchmark-gas-value_1M-blockchain_test-opcode_EXTCODESIZE] |  | 223,662 | 371,609.0 | 371.61 |
-| risc0-v3.0.1/test_worst_bytecode.py::test_worst_create[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-0 bytes with value-opcode_CREATE] |  | 223,662 | 6,953.0 | 6.95 |
-| risc0-v3.0.1/test_worst_bytecode.py::test_worst_create[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-0 bytes without value-opcode_CREATE2] |  | 223,662 | 7,494.0 | 7.49 |
-| risc0-v3.0.1/test_worst_bytecode.py::test_worst_create[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-0.25x max code size with non-zero data-opcode_CREATE2] |  | 223,662 | 6,565.0 | 6.57 |
-| risc0-v3.0.1/test_worst_bytecode.py::test_worst_create[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-0.75x max code size with non-zero data-opcode_CREATE2] |  | 223,662 | 6,999.0 | 7.00 |
-| risc0-v3.0.1/test_worst_bytecode.py::test_worst_create[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-0.75x max code size with non-zero data-opcode_CREATE] |  | 223,662 | 6,910.0 | 6.91 |
-| risc0-v3.0.1/test_worst_bytecode.py::test_worst_create[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-0.75x max code size with zero data-opcode_CREATE2] |  | 223,662 | 8,178.0 | 8.18 |
-| risc0-v3.0.1/test_worst_bytecode.py::test_worst_create[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-0.75x max code size with zero data-opcode_CREATE] |  | 223,662 | 6,564.0 | 6.56 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_binop_simple[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_LT-] |  | 223,662 | 31,239.0 | 31.24 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_binop_simple[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_OR-] |  | 223,662 | 65,398.0 | 65.40 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_binop_simple[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_SDIV-1] |  | 223,662 | 570,599.0 | 570.60 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_binop_simple[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_SHL-] |  | 223,662 | 72,517.0 | 72.52 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_binop_simple[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_SUB-] |  | 223,662 | 42,150.0 | 42.15 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_blobhash[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-one blob but access non-existent index] |  | 223,662 | 37,311.0 | 37.31 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_calldataload[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-zero-loop] |  | 223,662 | 85,572.0 | 85.57 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_calldatasize[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-calldata_length_0] |  | 223,662 | 30,299.0 | 30.30 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_calldatasize[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-calldata_length_10000] |  | 223,662 | 33,723.0 | 33.72 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_callvalue[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-from_origin_False-non_zero_value_True] |  | 223,662 | 52,208.0 | 52.21 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_callvalue[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-from_origin_True-non_zero_value_True] |  | 223,662 | 28,409.0 | 28.41 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_dup[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_DUP13] |  | 223,662 | 31,748.0 | 31.75 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_dup[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_DUP14] |  | 223,662 | 37,335.0 | 37.34 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_dup[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_DUP3] |  | 223,662 | 31,992.0 | 31.99 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_jumps[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test] |  | 223,662 | 21,779.0 | 21.78 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_memory_access[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-big_memory_expansion_False-offset_initialized_False-offset_0-opcode_MLOAD] |  | 223,662 | 81,011.0 | 81.01 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_memory_access[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-big_memory_expansion_False-offset_initialized_True-offset_31-opcode_MSTORE8] |  | 223,662 | 41,612.0 | 41.61 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_memory_access[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-big_memory_expansion_False-offset_initialized_True-offset_31-opcode_MSTORE] |  | 223,662 | 68,864.0 | 68.86 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_memory_access[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-big_memory_expansion_True-offset_initialized_False-offset_0-opcode_MLOAD] |  | 223,662 | 54,027.0 | 54.03 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_memory_access[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-big_memory_expansion_True-offset_initialized_False-offset_0-opcode_MSTORE8] |  | 223,662 | 42,139.0 | 42.14 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_memory_access[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-big_memory_expansion_True-offset_initialized_False-offset_1-opcode_MLOAD] |  | 223,662 | 53,344.0 | 53.34 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_mod[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-op_MOD-mod_bits_127] |  | 223,662 | 375,441.0 | 375.44 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_mod[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-op_SMOD-mod_bits_191] |  | 223,662 | 315,346.0 | 315.35 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_mod[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-op_SMOD-mod_bits_63] |  | 223,662 | 139,445.0 | 139.44 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modarith[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-op_ADDMOD-mod_bits_63] |  | 223,662 | 198,155.0 | 198.16 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modarith[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-op_MULMOD-mod_bits_191] |  | 223,662 | 417,768.0 | 417.77 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modarith[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-op_MULMOD-mod_bits_255] |  | 223,662 | 397,795.0 | 397.80 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_600_gas_exp_heavy] |  | 223,662 | 1,245,012.0 | 1,245.01 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_765_gas_exp_heavy] |  | 223,662 | 1,185,869.0 | 1,185.87 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_867_gas_base_heavy] |  | 223,662 | 3,635,014.0 | 3,635.01 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_even_512b_exp_1024] |  | 223,662 | 10,041.0 | 10.04 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_even_8b_exp_896] |  | 223,662 | 2,554,995.0 | 2,554.99 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_exp_298_gas_exp_heavy] |  | 223,662 | 2,150,983.0 | 2,150.98 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_odd_64b_exp_512] |  | 223,662 | 932,578.0 | 932.58 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_pawel_2] |  | 223,662 | 1,390,546.0 | 1,390.55 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_common_1349n1] |  | 223,662 | 854,894.0 | 854.89 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_common_1360n1] |  | 223,662 | 940,727.0 | 940.73 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_common_1360n2] |  | 223,662 | 1,511,747.0 | 1,511.75 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_example_1] |  | 223,662 | 1,910,282.0 | 1,910.28 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_marius_1_even] |  | 223,662 | 1,198,046.0 | 1,198.05 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_nagydani_1_qube] |  | 223,662 | 564,533.0 | 564.53 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_nagydani_1_square] |  | 223,662 | 536,326.0 | 536.33 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_nagydani_3_pow_0x10001] |  | 223,662 | 753,270.0 | 753.27 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_nagydani_3_square] |  | 223,662 | 7,245,225.0 | 7,245.23 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_nagydani_4_pow_0x10001] |  | 223,662 | 604,256.0 | 604.26 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_nagydani_5_pow_0x10001] |  | 223,662 | 646,103.0 | 646.10 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_nagydani_5_square] |  | 223,662 | 3,811,133.0 | 3,811.13 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_pawel_1_exp_heavy] |  | 223,662 | 2,065,091.0 | 2,065.09 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_modexp[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mod_vul_pawel_3_exp_heavy] |  | 223,662 | 1,835,391.0 | 1,835.39 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_msize[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mem_size_100000] |  | 223,662 | 73,065.0 | 73.06 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_msize[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mem_size_1000] |  | 223,662 | 42,434.0 | 42.43 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_msize[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-mem_size_1] |  | 223,662 | 49,314.0 | 49.31 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_precompile_fixed_cost[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-blake2f] |  | 223,662 | 784,022.0 | 784.02 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_precompile_fixed_cost[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-bn128_add] |  | 223,662 | 176,352.0 | 176.35 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_precompile_fixed_cost[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-bn128_mul] |  | N/A | N/A | N/A |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_precompile_fixed_cost[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-bn128_mul_1_2_2_scalar] |  | 223,662 | 22,944.0 | 22.94 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_precompile_fixed_cost[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-bn128_two_pairings] |  | 223,662 | 289,734.0 | 289.73 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_precompile_fixed_cost[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-bn128_two_pairings_empty] |  | 223,662 | 5,933.0 | 5.93 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_precompile_only_data_input[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-IDENTITY] |  | 223,662 | 54,441.0 | 54.44 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_precompile_only_data_input[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-SHA2-256] |  | 223,662 | 10,640.0 | 10.64 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_push[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_PUSH13] |  | 223,662 | 40,813.0 | 40.81 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_push[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_PUSH15] |  | 223,662 | 95,049.0 | 95.05 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_push[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_PUSH16] |  | 223,662 | 50,023.0 | 50.02 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_push[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_PUSH20] |  | 223,662 | 54,356.0 | 54.36 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_push[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_PUSH23] |  | 223,662 | 95,229.0 | 95.23 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_push[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_PUSH25] |  | 223,662 | 55,691.0 | 55.69 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_push[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_PUSH28] |  | 223,662 | 69,658.0 | 69.66 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_push[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_PUSH29] |  | 223,662 | 136,950.0 | 136.95 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_push[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_PUSH7] |  | 223,662 | 81,297.0 | 81.30 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_return_revert[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-1KiB of non-zero data-opcode_REVERT] |  | 223,662 | 51,334.0 | 51.33 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_return_revert[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-1MiB of zero data-opcode_RETURN] |  | 223,662 | 11,504.0 | 11.50 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_return_revert[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-1MiB of zero data-opcode_REVERT] |  | 223,662 | 7,168.0 | 7.17 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_returndatasize_nonzero[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-returned_size_1-return_data_style_ReturnDataStyle.REVERT] |  | 223,662 | 50,615.0 | 50.62 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_swap[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_SWAP5] |  | 223,662 | 133,731.0 | 133.73 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_swap[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_SWAP9] |  | 223,662 | 66,244.0 | 66.24 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_tload[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-val_mut_False-key_mut_False] |  | 223,662 | 9,923.0 | 9.92 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_tload[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-val_mut_False-key_mut_True] |  | 223,662 | 21,938.0 | 21.94 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_tstore[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-dense_val_mut_False-key_mut_True] |  | 223,662 | 29,857.0 | 29.86 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_zero_param[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_ADDRESS] |  | 223,662 | 77,651.0 | 77.65 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_zero_param[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_CHAINID] |  | 223,662 | 42,187.0 | 42.19 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_zero_param[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_GASLIMIT] |  | 223,662 | 40,599.0 | 40.60 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_zero_param[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_GASPRICE] |  | 223,662 | 45,470.0 | 45.47 |
-| risc0-v3.0.1/test_worst_compute.py::test_worst_zero_param[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-opcode_ORIGIN] |  | 223,662 | 78,970.0 | 78.97 |
-| risc0-v3.0.1/test_worst_memory.py::test_worst_calldatacopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-non_zero_data_False-fixed_src_dst_False-1MiB-call] |  | 223,662 | 5,937.0 | 5.94 |
-| risc0-v3.0.1/test_worst_memory.py::test_worst_calldatacopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-non_zero_data_False-fixed_src_dst_True-100 bytes-call] |  | 223,662 | 26,592.0 | 26.59 |
-| risc0-v3.0.1/test_worst_memory.py::test_worst_calldatacopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-non_zero_data_False-fixed_src_dst_True-10KiB-transaction] |  | 223,662 | 11,575.0 | 11.57 |
-| risc0-v3.0.1/test_worst_memory.py::test_worst_calldatacopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-non_zero_data_True-fixed_src_dst_False-100 bytes-transaction] |  | 223,662 | 97,771.0 | 97.77 |
-| risc0-v3.0.1/test_worst_memory.py::test_worst_codecopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_src_dst_False-0.50x max code size] |  | 223,662 | 21,542.0 | 21.54 |
-| risc0-v3.0.1/test_worst_memory.py::test_worst_codecopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_src_dst_False-max code size] |  | 223,662 | 24,328.0 | 24.33 |
-| risc0-v3.0.1/test_worst_memory.py::test_worst_codecopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_src_dst_True-0.75x max code size] |  | 223,662 | 16,982.0 | 16.98 |
-| risc0-v3.0.1/test_worst_memory.py::test_worst_mcopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_src_dst_False-1MiB] |  | 223,662 | 6,425.0 | 6.42 |
-| risc0-v3.0.1/test_worst_memory.py::test_worst_returndatacopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_dst_True-0 bytes] |  | 223,662 | 41,322.0 | 41.32 |
-| risc0-v3.0.1/test_worst_memory.py::test_worst_returndatacopy[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_dst_True-1MiB] |  | 223,662 | 7,042.0 | 7.04 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_False-non_zero_topic-0_bytes_data-log2] |  | 223,662 | 7,107.0 | 7.11 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_False-non_zero_topic-0_bytes_data-log4] |  | 223,662 | 8,416.0 | 8.42 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_False-non_zero_topic-1_MiB_non_zero_data-log2] |  | 223,662 | 6,085.0 | 6.08 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_False-non_zero_topic-1_MiB_zeros_data-log4] |  | 223,662 | 6,167.0 | 6.17 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_False-zeros_topic-0_bytes_data-log2] |  | 223,662 | 7,593.0 | 7.59 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_False-zeros_topic-1_MiB_non_zero_data-log0] |  | 223,662 | 5,934.0 | 5.93 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_False-zeros_topic-1_MiB_zeros_data-log1] |  | 223,662 | 6,115.0 | 6.12 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_False-zeros_topic-1_MiB_zeros_data-log3] |  | 223,662 | 6,089.0 | 6.09 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_True-non_zero_topic-0_bytes_data-log2] |  | 223,662 | 7,433.0 | 7.43 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_True-non_zero_topic-0_bytes_data-log4] |  | 223,662 | 7,249.0 | 7.25 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_True-non_zero_topic-1_MiB_zeros_data-log1] |  | 223,662 | 6,169.0 | 6.17 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_True-zeros_topic-1_MiB_non_zero_data-log1] |  | 223,662 | 6,320.0 | 6.32 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_True-zeros_topic-1_MiB_non_zero_data-log3] |  | 223,662 | 6,316.0 | 6.32 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_True-zeros_topic-1_MiB_zeros_data-log0] |  | 223,662 | 9,861.0 | 9.86 |
-| risc0-v3.0.1/test_worst_opcode.py::test_worst_log_opcodes[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-fixed_offset_True-zeros_topic-1_MiB_zeros_data-log4] |  | 223,662 | 10,016.0 | 10.02 |
-| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_address_state_warm[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-absent_target_True-opcode_DELEGATECALL] |  | 223,662 | 77,463.0 | 77.46 |
-| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_blockhash[fork_Prague-benchmark-gas-value_1M-blockchain_test] |  | 223,662 | 43,866.0 | 43.87 |
-| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_extcodecopy_warm[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-512] |  | 223,662 | 18,699.0 | 18.70 |
-| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_selfdestruct_created[fork_Prague-benchmark-gas-value_1M-blockchain_test_from_state_test-value_bearing_False] |  | 223,662 | 6,778.0 | 6.78 |
-| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_selfdestruct_existing[fork_Prague-benchmark-gas-value_1M-blockchain_test-value_bearing_False] |  | 223,662 | 17,629.0 | 17.63 |
-| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_selfdestruct_existing[fork_Prague-benchmark-gas-value_1M-blockchain_test-value_bearing_True] |  | 223,662 | 15,164.0 | 15.16 |
-| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_storage_access_cold[fork_Prague-benchmark-gas-value_1M-blockchain_test-absent_slots_False-SSTORE new value, out of gas] |  | 223,662 | 22,642.0 | 22.64 |
-| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_storage_access_cold[fork_Prague-benchmark-gas-value_1M-blockchain_test-absent_slots_False-SSTORE new value] |  | 223,662 | 14,911.0 | 14.91 |
-| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_storage_access_cold[fork_Prague-benchmark-gas-value_1M-blockchain_test-absent_slots_True-SSTORE same value, revert] |  | 223,662 | 6,006.0 | 6.01 |
-| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_storage_access_warm[fork_Prague-benchmark-gas-value_1M-blockchain_test-SLOAD] |  | 223,662 | 42,083.0 | 42.08 |
-| risc0-v3.0.1/test_worst_stateful_opcodes.py::test_worst_storage_access_warm[fork_Prague-benchmark-gas-value_1M-blockchain_test-SSTORE new value] |  | 223,662 | 51,382.0 | 51.38 |
 
