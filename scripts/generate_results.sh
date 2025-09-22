@@ -148,8 +148,8 @@ check_workspace() {
 find_available_categories() {
     local categories=()
     
-    for gas_value in "1M" "10M" "30M" "45M" "60M" "100M" "500M"; do
-        local metrics_dir="${BASE_METRICS_DIR}-${gas_value}"
+    # Look for directories with pattern: zkevm-metrics-{zkvm}-{gas_value}
+    for metrics_dir in "${BASE_METRICS_DIR}"-*; do
         if [ -d "$metrics_dir" ]; then
             # Check if directory has any JSON files
             if find "$metrics_dir" -name "*.json" -type f | grep -q .; then
@@ -237,15 +237,19 @@ main() {
     
     if [ ${#available_categories[@]} -eq 0 ]; then
         print_status "$YELLOW" "⚠️  No metrics folders found with JSON files"
-        print_status "$YELLOW" "   Expected folders: ${BASE_METRICS_DIR}-{1M,10M,30M,45M,60M,100M,500M}"
+        print_status "$YELLOW" "   Expected folders: ${BASE_METRICS_DIR}-{zkvm}-{1M,10M,30M,45M,60M,100M,500M}"
         print_status "$YELLOW" "   Run './scripts/run-gas-categorized-benchmarks.sh' first to generate metrics"
         exit 1
     fi
     
     print_status "$GREEN" "✅ Found ${#available_categories[@]} metrics folders:"
     for category in "${available_categories[@]}"; do
-        local gas_value=$(basename "$category" | sed 's/zkevm-metrics-//')
-        print_status "$GREEN" "  - $category (Gas: $gas_value)"
+        local dir_name=$(basename "$category")
+        local zkvm_and_gas=$(echo "$dir_name" | sed 's/zkevm-metrics-//')
+        # Extract zkvm and gas value from pattern: zkvm-gas_value
+        local zkvm=$(echo "$zkvm_and_gas" | sed 's/-[^-]*$//')
+        local gas_value=$(echo "$zkvm_and_gas" | sed 's/^[^-]*-//')
+        print_status "$GREEN" "  - $category (zkVM: $zkvm, Gas: $gas_value)"
     done
     
     # Determine what to do

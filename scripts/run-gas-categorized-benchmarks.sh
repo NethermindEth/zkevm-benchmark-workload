@@ -234,7 +234,7 @@ run_benchmark() {
     local category="$1"
     local gas_value=$(echo "$category" | sed 's/benchmark-gas-value_//')
     local input_dir="${BASE_INPUT_DIR}-${gas_value}"
-    local metrics_dir="${BASE_METRICS_DIR}-${gas_value}"
+    local metrics_dir="${BASE_METRICS_DIR}-${ZKVM}-${gas_value}"
     
     # Check if input directory exists
     if [ ! -d "$input_dir" ]; then
@@ -276,7 +276,7 @@ show_summary() {
     for category in "${GAS_CATEGORIES[@]}"; do
         local gas_value=$(echo "$category" | sed 's/benchmark-gas-value_//')
         local input_dir="${BASE_INPUT_DIR}-${gas_value}"
-        local metrics_dir="${BASE_METRICS_DIR}-${gas_value}"
+        local metrics_dir="${BASE_METRICS_DIR}-${ZKVM}-${gas_value}"
         
         if [ -d "$input_dir" ] && [ -d "$metrics_dir" ]; then
             local metric_file_count=$(find "$metrics_dir" -type f 2>/dev/null | wc -l)
@@ -288,7 +288,7 @@ show_summary() {
         fi
     done
     
-    print_status "$BLUE" "\n📁 All metrics are located in: $BASE_METRICS_DIR-*"
+    print_status "$BLUE" "\n📁 All metrics are located in: $BASE_METRICS_DIR-$ZKVM-*"
 }
 
 # Main execution
@@ -307,7 +307,7 @@ main() {
         for category in "${GAS_CATEGORIES[@]}"; do
             local gas_value=$(echo "$category" | sed 's/benchmark-gas-value_//')
             local input_dir="${BASE_INPUT_DIR}-${gas_value}"
-            local metrics_dir="${BASE_METRICS_DIR}-${gas_value}"
+            local metrics_dir="${BASE_METRICS_DIR}-${ZKVM}-${gas_value}"
             local force_arg=""
             if [ "$FORCE_RERUN" = true ]; then
                 force_arg="--force-rerun"
