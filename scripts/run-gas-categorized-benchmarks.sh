@@ -18,6 +18,8 @@
 #   --guest <GUEST> Guest program type (default: stateless-executor)
 #   --zkvm <ZKVM> zkVM implementation to use (default: risc0)
 #   --execution-client <CLIENT> Execution client to use (default: reth)
+#   --input-dir <DIR> Base input directory (default: ./zkevm-fixtures-input)
+#   --gas-category <CATEGORY> Run on specific gas category only (e.g., 1M, 10M, 30M, 45M, 60M, 100M, 500M)
 #
 # Examples:
 #   # Run all gas categories with default settings
@@ -28,6 +30,12 @@
 #   
 #   # Run with specific zkVM and execution client
 #   ./scripts/run-gas-categorized-benchmarks.sh --zkvm sp1 --execution-client ethrex
+#   
+#   # Run with custom input directory
+#   ./scripts/run-gas-categorized-benchmarks.sh --input-dir ./my-custom-fixtures
+#   
+#   # Run on just one gas category
+#   ./scripts/run-gas-categorized-benchmarks.sh --gas-category 10M
 #   
 #   # Preview what would be executed
 #   ./scripts/run-gas-categorized-benchmarks.sh --dry-run
@@ -54,6 +62,7 @@ ZKVM="risc0"
 EXECUTION_CLIENT="reth"
 BASE_INPUT_DIR="./zkevm-fixtures-input"
 BASE_METRICS_DIR="./zkevm-metrics"
+SINGLE_GAS_CATEGORY=""
 
 # Gas parameter categories
 declare -a GAS_CATEGORIES=(
@@ -97,6 +106,8 @@ show_help() {
     echo "  --guest <GUEST>        Guest program type (default: stateless-executor)"
     echo "  --zkvm <ZKVM>          zkVM implementation to use (default: risc0)"
     echo "  --execution-client <CLIENT> Execution client to use (default: reth)"
+    echo "  --input-dir <DIR>      Base input directory (default: ./zkevm-fixtures-input)"
+    echo "  --gas-category <CATEGORY> Run on specific gas category only (e.g., 1M, 10M, 30M, 45M, 60M, 100M, 500M)"
 echo ""
 echo "Available zkVM Features:"
 echo "  - risc0: RISC0 zkVM implementation (default)"
@@ -113,6 +124,8 @@ echo "Examples:"
     echo "  $0                                    # Run all gas categories with defaults"
     echo "  $0 --action execute --resource cpu    # Run with custom action and resource"
     echo "  $0 --zkvm sp1 --execution-client ethrex # Run with specific zkVM and client"
+    echo "  $0 --input-dir ./my-custom-fixtures   # Run with custom input directory"
+    echo "  $0 --gas-category 10M                 # Run on just one gas category"
     echo "  $0 --dry-run                          # Show what would be executed"
     echo ""
     echo "Gas Categories:"
@@ -164,6 +177,14 @@ while [[ $# -gt 0 ]]; do
             EXECUTION_CLIENT="$2"
             shift 2
             ;;
+        --input-dir)
+            BASE_INPUT_DIR="$2"
+            shift 2
+            ;;
+        --gas-category)
+            SINGLE_GAS_CATEGORY="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown option: $1"
             show_help
@@ -176,6 +197,36 @@ check_cargo() {
     if ! command -v cargo &> /dev/null; then
         print_status "$RED" "❌ Error: cargo is not installed or not in PATH"
         exit 1
+    fi
+}
+
+# Function to validate gas category
+validate_gas_category() {
+    if [ -n "$SINGLE_GAS_CATEGORY" ]; then
+        local valid_categories=("1M" "10M" "30M" "45M" "60M" "100M" "500M")
+        local is_valid=false
+        
+        for valid_cat in "${valid_categories[@]}"; do
+            if [ "$SINGLE_GAS_CATEGORY" = "$valid_cat" ]; then
+                is_valid=true
+                break
+            fi
+        done
+        
+        if [ "$is_valid" = false ]; then
+            print_status "$RED" "❌ Error: Invalid gas category '$SINGLE_GAS_CATEGORY'"
+            print_status "$RED" "   Valid categories: ${valid_categories[*]}"
+            exit 1
+        fi
+    fi
+}
+
+# Function to get categories to run
+get_categories_to_run() {
+    if [ -n "$SINGLE_GAS_CATEGORY" ]; then
+        echo "benchmark-gas-value_${SINGLE_GAS_CATEGORY}"
+    else
+        echo "${GAS_CATEGORIES[@]}"
     fi
 }
 
@@ -273,7 +324,8 @@ show_summary() {
     print_status "$GREEN" "\n🎉 Benchmark execution completed!"
     print_status "$BLUE" "\n📊 Summary of benchmark results:"
     
-    for category in "${GAS_CATEGORIES[@]}"; do
+    local categories_to_run=($(get_categories_to_run))
+    for category in "${categories_to_run[@]}"; do
         local gas_value=$(echo "$category" | sed 's/benchmark-gas-value_//')
         local input_dir="${BASE_INPUT_DIR}-${gas_value}"
         local metrics_dir="${BASE_METRICS_DIR}-${ZKVM}-${gas_value}"
@@ -301,10 +353,17 @@ main() {
         print_status "$BLUE" "🎯 Guest: $GUEST"
         print_status "$BLUE" "🔧 zkVM: $ZKVM"
         print_status "$BLUE" "⚙️  Execution Client: $EXECUTION_CLIENT"
+        print_status "$BLUE" "📁 Input Directory: $BASE_INPUT_DIR"
+        if [ -n "$SINGLE_GAS_CATEGORY" ]; then
+            print_status "$BLUE" "🎯 Gas Category: $SINGLE_GAS_CATEGORY (single category mode)"
+        else
+            print_status "$BLUE" "🎯 Gas Categories: All available categories"
+        fi
         print_status "$BLUE" "🔄 Force Rerun: $FORCE_RERUN"
         print_status "$BLUE" "\n📋 Would execute the following commands:"
         
-        for category in "${GAS_CATEGORIES[@]}"; do
+        local categories_to_run=($(get_categories_to_run))
+        for category in "${categories_to_run[@]}"; do
             local gas_value=$(echo "$category" | sed 's/benchmark-gas-value_//')
             local input_dir="${BASE_INPUT_DIR}-${gas_value}"
             local metrics_dir="${BASE_METRICS_DIR}-${ZKVM}-${gas_value}"
@@ -327,11 +386,18 @@ main() {
     print_status "$BLUE" "🎯 Guest: $GUEST"
     print_status "$BLUE" "🔧 zkVM: $ZKVM"
     print_status "$BLUE" "⚙️  Execution Client: $EXECUTION_CLIENT"
+    print_status "$BLUE" "📁 Input Directory: $BASE_INPUT_DIR"
+    if [ -n "$SINGLE_GAS_CATEGORY" ]; then
+        print_status "$BLUE" "🎯 Gas Category: $SINGLE_GAS_CATEGORY (single category mode)"
+    else
+        print_status "$BLUE" "🎯 Gas Categories: All available categories"
+    fi
     print_status "$BLUE" "🔄 Force Rerun: $FORCE_RERUN"
     
     # Pre-flight checks
     check_cargo
     check_workspace
+    validate_gas_category
     
     # Check input fixtures
     check_input_fixtures
@@ -341,8 +407,9 @@ main() {
     
     # Run benchmarks for each gas category
     local failed_categories=()
+    local categories_to_run=($(get_categories_to_run))
     
-    for category in "${GAS_CATEGORIES[@]}"; do
+    for category in "${categories_to_run[@]}"; do
         if run_benchmark "$category"; then
             print_status "$GREEN" "✅ Completed: $category"
         else
