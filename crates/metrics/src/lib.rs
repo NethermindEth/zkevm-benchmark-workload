@@ -5,7 +5,9 @@ pub use chrono;
 
 use serde_derive::{Deserialize, Serialize};
 use std::{collections::HashMap, fs, io, path::Path, time::Duration};
-use sysinfo::{CpuExt, System, SystemExt, ProcessExt, Pid};
+use sysinfo::{CpuExt, System, SystemExt};
+#[cfg(feature = "memory-tracking")]
+use sysinfo::{ProcessExt, Pid};
 use thiserror::Error;
 
 /// Represents a single benchmark run.
@@ -46,62 +48,100 @@ pub struct GpuInfo {
 /// Memory tracker for monitoring RAM usage during proving
 #[derive(Debug, Clone)]
 pub struct MemoryTracker {
+    #[cfg(feature = "memory-tracking")]
     process_id: Pid,
+    #[cfg(feature = "memory-tracking")]
     initial_memory: u64,
+    #[cfg(feature = "memory-tracking")]
     peak_memory: u64,
+    #[cfg(feature = "memory-tracking")]
     memory_samples: Vec<u64>,
 }
 
 impl MemoryTracker {
     /// Creates a new memory tracker
     pub fn new() -> Self {
-        let process_id = Pid::from(std::process::id() as i32);
-        
-        Self {
-            process_id,
-            initial_memory: 0,
-            peak_memory: 0,
-            memory_samples: Vec::new(),
+        #[cfg(feature = "memory-tracking")]
+        {
+            let process_id = Pid::from(std::process::id() as i32);
+            
+            Self {
+                process_id,
+                initial_memory: 0,
+                peak_memory: 0,
+                memory_samples: Vec::new(),
+            }
+        }
+        #[cfg(not(feature = "memory-tracking"))]
+        {
+            Self {}
         }
     }
     
     /// Starts tracking memory usage
     pub fn start_tracking(&mut self) {
-        let mut system = System::new_all();
-        system.refresh_all();
-        if let Some(process) = system.process(self.process_id) {
-            self.initial_memory = process.memory() * 1024; // Convert KB to bytes
-            self.peak_memory = self.initial_memory;
+        #[cfg(feature = "memory-tracking")]
+        {
+            let mut system = System::new_all();
+            system.refresh_all();
+            if let Some(process) = system.process(self.process_id) {
+                self.initial_memory = process.memory() * 1024; // Convert KB to bytes
+                self.peak_memory = self.initial_memory;
+            }
         }
     }
     
     /// Samples current memory usage
     pub fn sample_memory(&mut self) {
-        let mut system = System::new_all();
-        system.refresh_all();
-        if let Some(process) = system.process(self.process_id) {
-            let current_memory = process.memory() * 1024; // Convert KB to bytes
-            self.peak_memory = self.peak_memory.max(current_memory);
-            self.memory_samples.push(current_memory);
+        #[cfg(feature = "memory-tracking")]
+        {
+            let mut system = System::new_all();
+            system.refresh_all();
+            if let Some(process) = system.process(self.process_id) {
+                let current_memory = process.memory() * 1024; // Convert KB to bytes
+                self.peak_memory = self.peak_memory.max(current_memory);
+                self.memory_samples.push(current_memory);
+            }
         }
     }
     
     /// Gets the average memory usage across all samples
     pub fn get_average_memory(&self) -> u64 {
-        if self.memory_samples.is_empty() {
-            return self.initial_memory;
+        #[cfg(feature = "memory-tracking")]
+        {
+            if self.memory_samples.is_empty() {
+                return self.initial_memory;
+            }
+            self.memory_samples.iter().sum::<u64>() / self.memory_samples.len() as u64
         }
-        self.memory_samples.iter().sum::<u64>() / self.memory_samples.len() as u64
+        #[cfg(not(feature = "memory-tracking"))]
+        {
+            0
+        }
     }
     
     /// Gets the peak memory usage
     pub fn get_peak_memory(&self) -> u64 {
-        self.peak_memory
+        #[cfg(feature = "memory-tracking")]
+        {
+            self.peak_memory
+        }
+        #[cfg(not(feature = "memory-tracking"))]
+        {
+            0
+        }
     }
     
     /// Gets the initial memory usage
     pub fn get_initial_memory(&self) -> u64 {
-        self.initial_memory
+        #[cfg(feature = "memory-tracking")]
+        {
+            self.initial_memory
+        }
+        #[cfg(not(feature = "memory-tracking"))]
+        {
+            0
+        }
     }
 }
 
@@ -192,12 +232,15 @@ pub enum ProvingMetrics {
         /// Proving time in milliseconds.
         proving_time_ms: u128,
         /// Peak memory usage during proving in bytes.
+        #[cfg(feature = "memory-tracking")]
         #[serde(skip_serializing_if = "Option::is_none")]
         peak_memory_usage_bytes: Option<u64>,
         /// Average memory usage during proving in bytes.
+        #[cfg(feature = "memory-tracking")]
         #[serde(skip_serializing_if = "Option::is_none")]
         average_memory_usage_bytes: Option<u64>,
         /// Memory usage at start of proving in bytes.
+        #[cfg(feature = "memory-tracking")]
         #[serde(skip_serializing_if = "Option::is_none")]
         initial_memory_usage_bytes: Option<u64>,
     },
@@ -331,8 +374,11 @@ mod tests {
                 proving: Some(ProvingMetrics::Success {
                     proof_size: 256,
                     proving_time_ms: 2_000,
+                    #[cfg(feature = "memory-tracking")]
                     peak_memory_usage_bytes: Some(1024 * 1024 * 100), // 100 MB
+                    #[cfg(feature = "memory-tracking")]
                     average_memory_usage_bytes: Some(1024 * 1024 * 80), // 80 MB
+                    #[cfg(feature = "memory-tracking")]
                     initial_memory_usage_bytes: Some(1024 * 1024 * 50), // 50 MB
                 }),
             },
@@ -346,8 +392,11 @@ mod tests {
                 proving: Some(ProvingMetrics::Success {
                     proof_size: 512,
                     proving_time_ms: 5_000,
+                    #[cfg(feature = "memory-tracking")]
                     peak_memory_usage_bytes: Some(1024 * 1024 * 200), // 200 MB
+                    #[cfg(feature = "memory-tracking")]
                     average_memory_usage_bytes: Some(1024 * 1024 * 150), // 150 MB
+                    #[cfg(feature = "memory-tracking")]
                     initial_memory_usage_bytes: Some(1024 * 1024 * 75), // 75 MB
                 }),
             },
@@ -421,8 +470,11 @@ mod tests {
             proving: Some(ProvingMetrics::Success {
                 proof_size: 128,
                 proving_time_ms: 1500,
+                #[cfg(feature = "memory-tracking")]
                 peak_memory_usage_bytes: Some(1024 * 1024 * 50), // 50 MB
+                #[cfg(feature = "memory-tracking")]
                 average_memory_usage_bytes: Some(1024 * 1024 * 40), // 40 MB
+                #[cfg(feature = "memory-tracking")]
                 initial_memory_usage_bytes: Some(1024 * 1024 * 30), // 30 MB
             }),
         };

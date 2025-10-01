@@ -5,6 +5,10 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
+[features]
+default = []
+memory-tracking = []
+
 [dependencies]
 serde.workspace = true
 thiserror.workspace = true

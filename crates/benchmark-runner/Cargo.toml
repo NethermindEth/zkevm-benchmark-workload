@@ -3,9 +3,13 @@ name = "benchmark-runner"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["memory-tracking"]
+memory-tracking = ["zkevm-metrics/memory-tracking"]
+
 [dependencies]
 witness-generator.workspace = true
-zkevm-metrics.workspace = true
+zkevm-metrics = { workspace = true, default-features = false }
 zkvm-interface.workspace = true
 guest-libs.workspace = true
 
