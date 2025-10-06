@@ -20,6 +20,7 @@
 #   --execution-client <CLIENT> Execution client to use (default: reth)
 #   --input-dir <DIR> Base input directory (default: ./zkevm-fixtures-input)
 #   --gas-category <CATEGORY> Run on specific gas category only (e.g., 1M, 10M, 30M, 45M, 60M, 100M, 500M)
+#   --memory-tracking <ENABLED> Enable memory tracking (default: false)
 #
 # Examples:
 #   # Run all gas categories with default settings
@@ -63,6 +64,7 @@ EXECUTION_CLIENT="reth"
 BASE_INPUT_DIR="./zkevm-fixtures-input"
 BASE_METRICS_DIR="./zkevm-metrics"
 SINGLE_GAS_CATEGORY=""
+MEMORY_TRACKING=false
 
 # Gas parameter categories
 declare -a GAS_CATEGORIES=(
@@ -105,9 +107,10 @@ show_help() {
     echo "  --resource <RESOURCE>  Resource type to use (default: gpu)"
     echo "  --guest <GUEST>        Guest program type (default: stateless-executor)"
     echo "  --zkvm <ZKVM>          zkVM implementation to use (default: risc0)"
-    echo "  --execution-client <CLIENT> Execution client to use (default: reth)"
-    echo "  --input-dir <DIR>      Base input directory (default: ./zkevm-fixtures-input)"
-    echo "  --gas-category <CATEGORY> Run on specific gas category only (e.g., 1M, 10M, 30M, 45M, 60M, 100M, 500M)"
+echo "  --execution-client <CLIENT> Execution client to use (default: reth)"
+echo "  --input-dir <DIR>      Base input directory (default: ./zkevm-fixtures-input)"
+echo "  --gas-category <CATEGORY> Run on specific gas category only (e.g., 1M, 10M, 30M, 45M, 60M, 100M, 500M)"
+echo "  --memory-tracking <ENABLED> Enable memory tracking (default: false)"
 echo ""
 echo "Available zkVM Features:"
 echo "  - risc0: RISC0 zkVM implementation (default)"
@@ -183,6 +186,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --gas-category)
             SINGLE_GAS_CATEGORY="$2"
+            shift 2
+            ;;
+        --memory-tracking)
+            MEMORY_TRACKING="$2"
             shift 2
             ;;
         *)
@@ -306,8 +313,14 @@ run_benchmark() {
         force_arg="--force-rerun"
     fi
     
+    # Build memory-tracking argument
+    local memory_arg=""
+    if [ "$MEMORY_TRACKING" = true ]; then
+        memory_arg="--memory-tracking"
+    fi
+    
     # Run the benchmark
-    if cargo run --release --bin ere-hosts -- --zkvms "$ZKVM" -a "$ACTION" -r "$RESOURCE" $force_arg -o "$metrics_dir" "$GUEST" --input-folder "$input_dir" --execution-client "$EXECUTION_CLIENT"; then
+    if cargo run --release --bin ere-hosts -- --zkvms "$ZKVM" -a "$ACTION" -r "$RESOURCE" $force_arg $memory_arg -o "$metrics_dir" "$GUEST" --input-folder "$input_dir" --execution-client "$EXECUTION_CLIENT"; then
         print_status "$GREEN" "✅ Successfully completed benchmark for $category"
         
         # Count the generated metric files
@@ -360,6 +373,7 @@ main() {
             print_status "$BLUE" "🎯 Gas Categories: All available categories"
         fi
         print_status "$BLUE" "🔄 Force Rerun: $FORCE_RERUN"
+        print_status "$BLUE" "🧠 Memory Tracking: $MEMORY_TRACKING"
         print_status "$BLUE" "\n📋 Would execute the following commands:"
         
         local categories_to_run=($(get_categories_to_run))
@@ -372,7 +386,12 @@ main() {
                 force_arg="--force-rerun"
             fi
             
-            print_status "$BLUE" "  cargo run --release --bin ere-hosts -- --zkvms $ZKVM -a $ACTION -r $RESOURCE $force_arg -o \"$metrics_dir\" $GUEST --input-folder \"$input_dir\" --execution-client $EXECUTION_CLIENT"
+            local memory_arg=""
+            if [ "$MEMORY_TRACKING" = true ]; then
+                memory_arg="--memory-tracking"
+            fi
+            
+            print_status "$BLUE" "  cargo run --release --bin ere-hosts -- --zkvms $ZKVM -a $ACTION -r $RESOURCE $force_arg $memory_arg -o \"$metrics_dir\" $GUEST --input-folder \"$input_dir\" --execution-client $EXECUTION_CLIENT"
             print_status "$BLUE" "  # Input: $input_dir"
         done
         
@@ -393,6 +412,7 @@ main() {
         print_status "$BLUE" "🎯 Gas Categories: All available categories"
     fi
     print_status "$BLUE" "🔄 Force Rerun: $FORCE_RERUN"
+    print_status "$BLUE" "🧠 Memory Tracking: $MEMORY_TRACKING"
     
     # Pre-flight checks
     check_cargo

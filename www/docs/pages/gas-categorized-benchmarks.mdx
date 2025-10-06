@@ -15,7 +15,7 @@ The gas-categorized profiling system runs resource analysis tests on pre-generat
 ./scripts/run-gas-categorized-benchmarks.sh
 
 # Run with specific zkVM and execution client
-./scripts/run-gas-categorized-benchmarks.sh --zkvm sp1 --execution-client ethrex
+./scripts/run-gas-categorized-benchmarks.sh --zkvm sp1 --execution-client reth
 
 # Run on a single gas category
 ./scripts/run-gas-categorized-benchmarks.sh --gas-category 10M
@@ -36,6 +36,7 @@ The gas-categorized profiling system runs resource analysis tests on pre-generat
 | `--execution-client <CLIENT>` | Execution client to use | reth |
 | `--input-dir <DIR>` | Base input directory | ./zkevm-fixtures-input |
 | `--gas-category <CATEGORY>` | Run on specific gas category only | all |
+| `--memory-tracking <ENABLED>` | Enable memory tracking for detailed memory analysis | false |
 
 ### Supported zkVM Implementations
 
@@ -105,6 +106,18 @@ The gas-categorized profiling system runs resource analysis tests on pre-generat
 ./scripts/run-gas-categorized-benchmarks.sh --action prove --resource gpu
 ```
 
+#### Memory Tracking
+```bash
+# Enable memory tracking for detailed memory analysis
+./scripts/run-gas-categorized-benchmarks.sh --memory-tracking true
+
+# Run with memory tracking on specific gas category
+./scripts/run-gas-categorized-benchmarks.sh --memory-tracking true --gas-category 10M
+
+# Run with memory tracking and specific zkVM
+./scripts/run-gas-categorized-benchmarks.sh --memory-tracking true --zkvm sp1
+```
+
 #### Single Gas Category
 ```bash
 # Run only on 10M gas category
@@ -129,6 +142,9 @@ The gas-categorized profiling system runs resource analysis tests on pre-generat
 
 # Preview with specific configuration
 ./scripts/run-gas-categorized-benchmarks.sh --dry-run --zkvm sp1 --gas-category 10M
+
+# Preview with memory tracking enabled
+./scripts/run-gas-categorized-benchmarks.sh --dry-run --memory-tracking true --zkvm sp1
 ```
 
 ## Output Structure
@@ -147,6 +163,7 @@ Each metrics directory contains:
 - JSON files with detailed benchmark results
 - Execution metrics (cycles, duration, region breakdowns)
 - Proving metrics (proof size, proving time, memory usage)
+- Memory tracking data (when enabled): detailed memory allocation patterns, peak memory usage, memory efficiency metrics
 - Metadata about the benchmark run
 
 ## Workflow Details
@@ -195,6 +212,28 @@ After completion, the script provides:
 #### CPU Resources
 - **Recommended**: Multi-core CPU with at least 16GB RAM
 - **Performance**: Slower but more accessible for development
+
+### Memory Tracking
+
+When memory tracking is enabled (`--memory-tracking true`), the benchmark system provides detailed memory analysis:
+
+#### Memory Metrics Collected
+- **Peak Memory Usage**: Maximum memory consumption during execution
+- **Memory Allocation Patterns**: Detailed tracking of memory allocations and deallocations
+- **Memory Efficiency**: Analysis of memory utilization vs. waste
+- **Memory Growth Trends**: How memory usage scales with gas categories
+- **Memory Hotspots**: Identification of memory-intensive operations
+
+#### Use Cases for Memory Tracking
+- **Performance Optimization**: Identify memory bottlenecks in zkVM implementations
+- **Resource Planning**: Determine optimal memory requirements for different gas categories
+- **Memory Leak Detection**: Monitor for potential memory leaks during long-running benchmarks
+- **Comparative Analysis**: Compare memory efficiency between different zkVM implementations
+
+#### Performance Impact
+- **Overhead**: Memory tracking adds approximately 5-10% execution time overhead
+- **Storage**: Generates additional JSON files with memory metrics
+- **Recommended**: Enable for detailed analysis, disable for maximum performance
 
 ### Execution Time Estimates
 
