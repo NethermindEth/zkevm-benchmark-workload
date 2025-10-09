@@ -16,10 +16,11 @@
 #   --execution-only        Only show execution metrics
 #   --proving-only          Only show proving metrics
 #   --statistics            Include statistical analysis
+#   --name-format <format>  Format for benchmark names (default: display)
 #   --open                  Open the generated file after creation
 #
 # Examples:
-#   # Generate tables for all available gas categories
+#   # Generate tables for all available gas categories (with display names)
 #   ./scripts/generate_results.sh --all
 #
 #   # Compare all gas categories with statistics
@@ -27,6 +28,12 @@
 #
 #   # Generate execution-only results and open them
 #   ./scripts/generate_results.sh --all --execution-only --open
+#
+#   # Use simplified names instead of display names
+#   ./scripts/generate_results.sh --all --name-format simplified
+#
+#   # Use original complex names
+#   ./scripts/generate_results.sh --all --name-format original
 #
 
 set -euo pipefail
@@ -39,6 +46,7 @@ EXECUTION_ONLY=false
 PROVING_ONLY=false
 INCLUDE_STATISTICS=false
 OPEN_FILE=false
+NAME_FORMAT="display"
 BASE_METRICS_DIR="./zkevm-metrics"
 
 # Colors for output
@@ -70,12 +78,15 @@ show_help() {
     echo "  --execution-only        Only show execution metrics"
     echo "  --proving-only          Only show proving metrics"
     echo "  --statistics            Include statistical analysis"
+    echo "  --name-format <format>  Format for benchmark names (default: display)"
     echo "  --open                  Open the generated file after creation"
     echo ""
     echo "Examples:"
-    echo "  $0 --all                                    # Generate tables for all categories"
+    echo "  $0 --all                                    # Generate tables for all categories (display names)"
     echo "  $0 --compare --statistics                   # Compare all with statistics"
     echo "  $0 --all --execution-only --open            # Generate execution-only and open"
+    echo "  $0 --all --name-format simplified           # Use simplified names"
+    echo "  $0 --all --name-format original             # Use original complex names"
     echo ""
     echo "Available gas categories:"
     echo "  - 1M: 1 million gas limit"
@@ -118,6 +129,10 @@ while [[ $# -gt 0 ]]; do
             INCLUDE_STATISTICS=true
             shift
             ;;
+        --name-format)
+            NAME_FORMAT="$2"
+            shift 2
+            ;;
         --open)
             OPEN_FILE=true
             shift
@@ -142,6 +157,20 @@ check_workspace() {
     fi
     
     print_status "$GREEN" "✅ Project structure verified"
+}
+
+# Function to validate name format
+validate_name_format() {
+    case "$NAME_FORMAT" in
+        original|display|simplified|category)
+            return 0
+            ;;
+        *)
+            print_status "$RED" "❌ Error: Invalid name format '$NAME_FORMAT'"
+            print_status "$RED" "   Valid formats: original, display, simplified, category"
+            exit 1
+            ;;
+    esac
 }
 
 # Function to find available gas categories
@@ -180,9 +209,12 @@ run_generator() {
         args+=("--statistics")
     fi
     
+    # Add name format
+    args+=("--name-format" "$NAME_FORMAT")
+    
     # Add comparison mode
     if [ "$COMPARE" = true ]; then
-        args+=("--compare" "--gas-categories")
+        args+=("--compare")
     fi
     
     # Add metrics folders
@@ -230,6 +262,7 @@ main() {
     
     # Pre-flight checks
     check_workspace
+    validate_name_format
     
     # Find available categories
     print_status "$BLUE" "🔍 Scanning for available metrics folders..."
@@ -251,6 +284,8 @@ main() {
         local gas_value=$(echo "$zkvm_and_gas" | sed 's/^[^-]*-//')
         print_status "$GREEN" "  - $category (zkVM: $zkvm, Gas: $gas_value)"
     done
+    
+    print_status "$BLUE" "📝 Using name format: $NAME_FORMAT"
     
     # Determine what to do
     if [ "$SHOW_ALL" = true ] || [ "$COMPARE" = true ]; then

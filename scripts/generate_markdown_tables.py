@@ -14,7 +14,6 @@ Options:
     --compare               Compare metrics between multiple folders
     --execution-only        Only show execution metrics
     --proving-only          Only show proving metrics
-    --gas-categories        Group results by gas categories
     --statistics            Include statistical analysis
     --help, -h              Show this help message
 
@@ -22,34 +21,51 @@ Examples:
     # Generate markdown table from single metrics folder
     python3 generate_markdown_tables.py zkevm-metrics-1M
 
-    # Compare multiple gas categories
-    python3 generate_markdown_tables.py --compare --gas-categories zkevm-metrics-1M zkevm-metrics-10M zkevm-metrics-100M
+    # Compare multiple folders
+    python3 generate_markdown_tables.py --compare zkevm-metrics-1M zkevm-metrics-10M zkevm-metrics-100M
 
     # Generate with statistics and save to file
     python3 generate_markdown_tables.py --statistics --output results.md zkevm-metrics-1M
 
     # Show only execution metrics
     python3 generate_markdown_tables.py --execution-only zkevm-metrics-1M
+    
+    # Use simplified names in tables
+    python3 generate_markdown_tables.py --name-format simplified zkevm-metrics-1M
+    
+    # Use human-readable display names
+    python3 generate_markdown_tables.py --name-format display zkevm-metrics-1M
 """
 
 import json
-import os
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Optional
 import statistics
 from datetime import datetime
-import csv
+
+# Import the test name parser
+try:
+    from test_name_parser import get_display_name, get_simplified_name, get_category, parse_test_name
+except ImportError:
+    # Fallback if the parser is not available
+    def get_display_name(filename: str) -> str:
+        return filename
+    def get_simplified_name(filename: str) -> str:
+        return filename
+    def get_category(filename: str) -> str:
+        return "unknown"
+    def parse_test_name(filename: str):
+        return None
 
 class BenchmarkMetrics:
     """Container for benchmark metrics data."""
     
-    def __init__(self, name: str, gas_category: str = ""):
+    def __init__(self, name: str):
         self.name = name
-        self.gas_category = gas_category
         self.timestamp = None
-        self.metadata = {}
+        self.metadata: Dict[str, int] = {}
         self.execution_metrics = None
         self.proving_metrics = None
     
@@ -101,10 +117,45 @@ class BenchmarkMetrics:
         if self.proving_metrics and "success" in self.proving_metrics:
             return self.proving_metrics["success"].get("initial_memory_usage_bytes")
         return None
+    
+    def get_gas_used(self) -> Optional[int]:
+        """Get gas used from metadata."""
+        return self.metadata.get("block_used_gas")
+
+
+def format_benchmark_name(name: str, name_format: str = "original") -> str:
+    """
+    Format a benchmark name based on the specified format.
+    
+    Args:
+        name: The original benchmark name (may include parent directory)
+        name_format: Format to use ("original", "display", "simplified", "category")
+        
+    Returns:
+        Formatted benchmark name
+    """
+    if name_format == "original":
+        return name
+    
+    # Extract just the filename part if it includes parent directory
+    filename = name
+    if '/' in name:
+        filename = name.split('/', 1)[1]
+    
+    if name_format == "display":
+        return get_display_name(filename)
+    elif name_format == "simplified":
+        return get_simplified_name(filename)
+    elif name_format == "category":
+        category = get_category(filename)
+        simplified = get_simplified_name(filename)
+        return f"[{category}] {simplified}"
+    else:
+        return name
 
 def load_metrics_from_folder(folder_path: str) -> Dict[str, BenchmarkMetrics]:
     """Load all metric files from a folder."""
-    metrics = {}
+    metrics: Dict[str, BenchmarkMetrics] = {}
     folder = Path(folder_path)
     
     if not folder.exists():
@@ -130,11 +181,15 @@ def load_metrics_from_folder(folder_path: str) -> Dict[str, BenchmarkMetrics]:
                     for i, run_data in enumerate(data):
                         name = run_data.get("name", f"{file_path.stem}_{i}")
                         metric = parse_benchmark_run(run_data, name)
-                        metrics[f"{file_path.parent.name}/{name}"] = metric
+                        # Use filename for display purposes
+                        display_key = f"{file_path.parent.name}/{file_path.stem}"
+                        metrics[display_key] = metric
                 else:
                     name = data.get("name", file_path.stem)
                     metric = parse_benchmark_run(data, name)
-                    metrics[f"{file_path.parent.name}/{name}"] = metric
+                    # Use filename for display purposes
+                    display_key = f"{file_path.parent.name}/{file_path.stem}"
+                    metrics[display_key] = metric
                     
         except (json.JSONDecodeError, FileNotFoundError) as e:
             print(f"Error loading {file_path}: {e}", file=sys.stderr)
@@ -152,37 +207,15 @@ def parse_benchmark_run(data: Dict, name: str) -> BenchmarkMetrics:
     
     return metric
 
-def extract_gas_category_from_path(folder_path: str) -> str:
-    """Extract gas category from folder path."""
-    path = Path(folder_path)
-    name = path.name
-    
-    # Look for gas value patterns like "1M", "10M", "100M"
-    if "1M" in name:
-        return "1M"
-    elif "10M" in name:
-        return "10M"
-    elif "30M" in name:
-        return "30M"
-    elif "45M" in name:
-        return "45M"
-    elif "60M" in name:
-        return "60M"
-    elif "100M" in name:
-        return "100M"
-    elif "500M" in name:
-        return "500M"
-    else:
-        return "Unknown"
 
 def generate_execution_table(metrics_dict: Dict[str, BenchmarkMetrics], 
-                           show_regions: bool = True) -> str:
+                           show_regions: bool = True, name_format: str = "original") -> str:
     """Generate markdown table for execution metrics."""
     if not any(m.has_execution() for m in metrics_dict.values()):
         return "## Execution Metrics\n\nNo execution metrics found.\n\n"
     
     # Collect all unique regions
-    all_regions = set()
+    all_regions: set[str] = set()
     for metric in metrics_dict.values():
         all_regions.update(metric.get_region_cycles().keys())
     
@@ -193,7 +226,7 @@ def generate_execution_table(metrics_dict: Dict[str, BenchmarkMetrics],
         sorted_regions.append("total_num_cycles")
     
     # Build table header
-    header = "| Benchmark | Gas Category | Total Cycles | Duration (ms)"
+    header = "| Benchmark | Gas Used | Total Cycles | Duration (ms)"
     if show_regions and sorted_regions:
         header += " | " + " | ".join(region.replace("_", " ").title() for region in sorted_regions)
     header += " |\n"
@@ -210,8 +243,12 @@ def generate_execution_table(metrics_dict: Dict[str, BenchmarkMetrics],
         total_cycles = metric.get_total_cycles()
         duration = metric.get_execution_duration_ms()
         region_cycles = metric.get_region_cycles()
+        gas_used = metric.get_gas_used()
         
-        row = f"| {name} | {metric.gas_category} | "
+        formatted_name = format_benchmark_name(name, name_format)
+        row = f"| {formatted_name} | "
+        row += f"{gas_used:,}" if gas_used else "N/A"
+        row += " | "
         row += f"{total_cycles:,}" if total_cycles else "N/A"
         row += " | "
         row += f"{duration:,.1f}" if duration else "N/A"
@@ -226,12 +263,12 @@ def generate_execution_table(metrics_dict: Dict[str, BenchmarkMetrics],
     
     return "## Execution Metrics\n\n" + header + separator + "".join(rows) + "\n"
 
-def generate_proving_table(metrics_dict: Dict[str, BenchmarkMetrics]) -> str:
+def generate_proving_table(metrics_dict: Dict[str, BenchmarkMetrics], name_format: str = "original") -> str:
     """Generate markdown table for proving metrics."""
     if not any(m.has_proving() for m in metrics_dict.values()):
         return "## Proving Metrics\n\nNo proving metrics found.\n\n"
     
-    header = "| Benchmark | Gas Category | Proof Size (bytes) | Proving Time (ms) | Proving Time (s) | Peak Memory (MB) | Avg Memory (MB) | Initial Memory (MB) |\n"
+    header = "| Benchmark | Gas Used | Proof Size (bytes) | Proving Time (ms) | Proving Time (s) | Peak Memory (MB) | Avg Memory (MB) | Initial Memory (MB) |\n"
     separator = "|---|---|---|---|---|---|---|---|\n"
     
     rows = []
@@ -242,6 +279,7 @@ def generate_proving_table(metrics_dict: Dict[str, BenchmarkMetrics]) -> str:
         proof_size = metric.get_proof_size()
         proving_time_ms = metric.get_proving_time_ms()
         proving_time_s = proving_time_ms / 1000.0 if proving_time_ms else None
+        gas_used = metric.get_gas_used()
         
         # Memory metrics
         peak_memory_bytes = metric.get_peak_memory_bytes()
@@ -253,7 +291,10 @@ def generate_proving_table(metrics_dict: Dict[str, BenchmarkMetrics]) -> str:
         avg_memory_mb = avg_memory_bytes / (1024 * 1024) if avg_memory_bytes else None
         initial_memory_mb = initial_memory_bytes / (1024 * 1024) if initial_memory_bytes else None
         
-        row = f"| {name} | {metric.gas_category} | "
+        formatted_name = format_benchmark_name(name, name_format)
+        row = f"| {formatted_name} | "
+        row += f"{gas_used:,}" if gas_used else "N/A"
+        row += " | "
         row += f"{proof_size:,}" if proof_size else "N/A"
         row += " | "
         row += f"{proving_time_ms:,.1f}" if proving_time_ms else "N/A"
@@ -271,24 +312,22 @@ def generate_proving_table(metrics_dict: Dict[str, BenchmarkMetrics]) -> str:
     return "## Proving Metrics\n\n" + header + separator + "".join(rows) + "\n"
 
 def generate_comparison_table(metrics_folders: List[str], 
-                            metrics_type: str = "execution") -> str:
-    """Generate comparison table across multiple gas categories."""
+                            metrics_type: str = "execution", name_format: str = "original") -> str:
+    """Generate comparison table across multiple folders."""
     all_metrics = {}
     
     for folder in metrics_folders:
-        gas_category = extract_gas_category_from_path(folder)
         folder_metrics = load_metrics_from_folder(folder)
         
         for name, metric in folder_metrics.items():
-            metric.gas_category = gas_category
-            # Create unique key combining name and gas category
-            key = f"{name}_{gas_category}"
+            # Create unique key combining name and folder
+            key = f"{name}_{folder}"
             all_metrics[key] = metric
     
     if metrics_type == "execution":
-        return generate_execution_table(all_metrics, show_regions=False)
+        return generate_execution_table(all_metrics, show_regions=False, name_format=name_format)
     else:
-        return generate_proving_table(all_metrics)
+        return generate_proving_table(all_metrics, name_format=name_format)
 
 def generate_statistics_section(metrics_dict: Dict[str, BenchmarkMetrics]) -> str:
     """Generate statistical analysis section."""
@@ -300,39 +339,45 @@ def generate_statistics_section(metrics_dict: Dict[str, BenchmarkMetrics]) -> st
     # Execution statistics
     execution_metrics = [m for m in metrics_dict.values() if m.has_execution()]
     if execution_metrics:
-        total_cycles = [m.get_total_cycles() for m in execution_metrics if m.get_total_cycles()]
-        durations = [m.get_execution_duration_ms() for m in execution_metrics if m.get_execution_duration_ms()]
+        total_cycles = [m.get_total_cycles() for m in execution_metrics if m.get_total_cycles() is not None]
+        durations = [m.get_execution_duration_ms() for m in execution_metrics if m.get_execution_duration_ms() is not None]
         
-        if total_cycles:
+        if total_cycles and durations:
             stats.append("### Execution Statistics")
-            stats.append(f"- **Total Cycles**: Min: {min(total_cycles):,}, Max: {max(total_cycles):,}, Avg: {statistics.mean(total_cycles):,.0f}")
-            stats.append(f"- **Duration**: Min: {min(durations):.1f}ms, Max: {max(durations):.1f}ms, Avg: {statistics.mean(durations):.1f}ms")
+            # Type assertion: we know these are not None due to the filter above
+            total_cycles_clean = [c for c in total_cycles if c is not None]
+            durations_clean = [d for d in durations if d is not None]
+            stats.append(f"- **Total Cycles**: Min: {min(total_cycles_clean):,}, Max: {max(total_cycles_clean):,}, Avg: {statistics.mean(total_cycles_clean):,.0f}")
+            stats.append(f"- **Duration**: Min: {min(durations_clean):.1f}ms, Max: {max(durations_clean):.1f}ms, Avg: {statistics.mean(durations_clean):.1f}ms")
             stats.append("")
     
     # Proving statistics
     proving_metrics = [m for m in metrics_dict.values() if m.has_proving()]
     if proving_metrics:
-        proof_sizes = [m.get_proof_size() for m in proving_metrics if m.get_proof_size()]
-        proving_times = [m.get_proving_time_ms() for m in proving_metrics if m.get_proving_time_ms()]
-        peak_memories = [m.get_peak_memory_bytes() for m in proving_metrics if m.get_peak_memory_bytes()]
+        proof_sizes = [m.get_proof_size() for m in proving_metrics if m.get_proof_size() is not None]
+        proving_times = [m.get_proving_time_ms() for m in proving_metrics if m.get_proving_time_ms() is not None]
+        peak_memories = [m.get_peak_memory_bytes() for m in proving_metrics if m.get_peak_memory_bytes() is not None]
         
-        if proof_sizes:
+        if proof_sizes and proving_times:
             stats.append("### Proving Statistics")
-            stats.append(f"- **Proof Size**: Min: {min(proof_sizes):,} bytes, Max: {max(proof_sizes):,} bytes, Avg: {statistics.mean(proof_sizes):,.0f} bytes")
-            stats.append(f"- **Proving Time**: Min: {min(proving_times):.1f}ms, Max: {max(proving_times):.1f}ms, Avg: {statistics.mean(proving_times):.1f}ms")
+            # Type assertion: we know these are not None due to the filter above
+            proof_sizes_clean = [p for p in proof_sizes if p is not None]
+            proving_times_clean = [t for t in proving_times if t is not None]
+            stats.append(f"- **Proof Size**: Min: {min(proof_sizes_clean):,} bytes, Max: {max(proof_sizes_clean):,} bytes, Avg: {statistics.mean(proof_sizes_clean):,.0f} bytes")
+            stats.append(f"- **Proving Time**: Min: {min(proving_times_clean):.1f}ms, Max: {max(proving_times_clean):.1f}ms, Avg: {statistics.mean(proving_times_clean):.1f}ms")
             if peak_memories:
-                peak_memories_mb = [m / (1024 * 1024) for m in peak_memories]
+                peak_memories_clean = [m for m in peak_memories if m is not None]
+                peak_memories_mb = [m / (1024 * 1024) for m in peak_memories_clean]
                 stats.append(f"- **Peak Memory**: Min: {min(peak_memories_mb):.1f}MB, Max: {max(peak_memories_mb):.1f}MB, Avg: {statistics.mean(peak_memories_mb):.1f}MB")
             stats.append("")
     
     return "## Statistics\n\n" + "\n".join(stats) + "\n" if stats else "## Statistics\n\nNo statistical data available.\n\n"
 
 def generate_summary_table(metrics_folders: List[str]) -> str:
-    """Generate summary table showing metrics per gas category."""
+    """Generate summary table showing metrics per folder."""
     summary_data = []
     
     for folder in metrics_folders:
-        gas_category = extract_gas_category_from_path(folder)
         metrics = load_metrics_from_folder(folder)
         
         execution_count = sum(1 for m in metrics.values() if m.has_execution())
@@ -341,24 +386,40 @@ def generate_summary_table(metrics_folders: List[str]) -> str:
         
         # Calculate averages
         avg_cycles = 0
-        avg_duration = 0
+        avg_duration = 0.0
         avg_proof_size = 0
-        avg_proving_time = 0
+        avg_proving_time = 0.0
         
         if execution_count > 0:
-            cycles = [m.get_total_cycles() for m in metrics.values() if m.get_total_cycles()]
-            durations = [m.get_execution_duration_ms() for m in metrics.values() if m.get_execution_duration_ms()]
-            avg_cycles = statistics.mean(cycles) if cycles else 0
-            avg_duration = statistics.mean(durations) if durations else 0
+            cycles = [m.get_total_cycles() for m in metrics.values() if m.get_total_cycles() is not None]
+            durations = [m.get_execution_duration_ms() for m in metrics.values() if m.get_execution_duration_ms() is not None]
+            if cycles:
+                cycles_clean = [c for c in cycles if c is not None]
+                avg_cycles = int(statistics.mean(cycles_clean))
+            else:
+                avg_cycles = 0
+            if durations:
+                durations_clean = [d for d in durations if d is not None]
+                avg_duration = statistics.mean(durations_clean)
+            else:
+                avg_duration = 0
         
         if proving_count > 0:
-            proof_sizes = [m.get_proof_size() for m in metrics.values() if m.get_proof_size()]
-            proving_times = [m.get_proving_time_ms() for m in metrics.values() if m.get_proving_time_ms()]
-            avg_proof_size = statistics.mean(proof_sizes) if proof_sizes else 0
-            avg_proving_time = statistics.mean(proving_times) if proving_times else 0
+            proof_sizes = [m.get_proof_size() for m in metrics.values() if m.get_proof_size() is not None]
+            proving_times = [m.get_proving_time_ms() for m in metrics.values() if m.get_proving_time_ms() is not None]
+            if proof_sizes:
+                proof_sizes_clean = [p for p in proof_sizes if p is not None]
+                avg_proof_size = int(statistics.mean(proof_sizes_clean))
+            else:
+                avg_proof_size = 0
+            if proving_times:
+                proving_times_clean = [t for t in proving_times if t is not None]
+                avg_proving_time = statistics.mean(proving_times_clean)
+            else:
+                avg_proving_time = 0
         
         summary_data.append({
-            'gas_category': gas_category,
+            'folder': folder,
             'total_benchmarks': total_count,
             'execution_benchmarks': execution_count,
             'proving_benchmarks': proving_count,
@@ -371,24 +432,24 @@ def generate_summary_table(metrics_folders: List[str]) -> str:
     if not summary_data:
         return "## Summary\n\nNo data available.\n\n"
     
-    header = "| Gas Category | Total Benchmarks | Execution | Proving | Avg Cycles | Avg Duration (ms) | Avg Proof Size (bytes) | Avg Proving Time (ms) |\n"
+    header = "| Folder | Total Benchmarks | Execution | Proving | Avg Cycles | Avg Duration (ms) | Avg Proof Size (bytes) | Avg Proving Time (ms) |\n"
     separator = "|---|---|---|---|---|---|---|---|\n"
     
     rows = []
-    for data in sorted(summary_data, key=lambda x: x['gas_category']):
-        row = f"| {data['gas_category']} | {data['total_benchmarks']} | "
+    for data in sorted(summary_data, key=lambda x: str(x['folder'])):
+        row = f"| {data['folder']} | {data['total_benchmarks']} | "
         row += f"{data['execution_benchmarks']} | {data['proving_benchmarks']} | "
-        row += f"{data['avg_cycles']:,.0f}" if data['avg_cycles'] > 0 else "N/A"
+        row += f"{data['avg_cycles']:,.0f}" if isinstance(data['avg_cycles'], int) and data['avg_cycles'] > 0 else "N/A"
         row += " | "
-        row += f"{data['avg_duration']:,.1f}" if data['avg_duration'] > 0 else "N/A"
+        row += f"{data['avg_duration']:,.1f}" if isinstance(data['avg_duration'], (int, float)) and data['avg_duration'] > 0 else "N/A"
         row += " | "
-        row += f"{data['avg_proof_size']:,.0f}" if data['avg_proof_size'] > 0 else "N/A"
+        row += f"{data['avg_proof_size']:,.0f}" if isinstance(data['avg_proof_size'], int) and data['avg_proof_size'] > 0 else "N/A"
         row += " | "
-        row += f"{data['avg_proving_time']:,.1f}" if data['avg_proving_time'] > 0 else "N/A"
+        row += f"{data['avg_proving_time']:,.1f}" if isinstance(data['avg_proving_time'], (int, float)) and data['avg_proving_time'] > 0 else "N/A"
         row += " |\n"
         rows.append(row)
     
-    return "## Summary by Gas Category\n\n" + header + separator + "".join(rows) + "\n"
+    return "## Summary by Folder\n\n" + header + separator + "".join(rows) + "\n"
 
 def main():
     """Main function."""
@@ -410,10 +471,10 @@ def main():
                        help="Only show execution metrics")
     parser.add_argument("--proving-only", action="store_true",
                        help="Only show proving metrics")
-    parser.add_argument("--gas-categories", action="store_true",
-                       help="Group results by gas categories")
     parser.add_argument("--statistics", action="store_true",
                        help="Include statistical analysis")
+    parser.add_argument("--name-format", choices=["original", "display", "simplified", "category"],
+                       default="original", help="Format for benchmark names (default: original)")
     
     args = parser.parse_args()
     
@@ -432,14 +493,13 @@ def main():
     content_parts = []
     
     # Add header
-    content_parts.append(f"# zkEVM Benchmark Results\n\n")
+    content_parts.append("# zkEVM Benchmark Results\n\n")
     content_parts.append(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
     
     if len(args.metrics_folders) > 1:
         content_parts.append(f"Comparing {len(args.metrics_folders)} metrics folders:\n")
         for folder in args.metrics_folders:
-            gas_category = extract_gas_category_from_path(folder)
-            content_parts.append(f"- {folder} (Gas: {gas_category})\n")
+            content_parts.append(f"- {folder}\n")
         content_parts.append("\n")
     
     # Generate summary table if comparing multiple folders
@@ -450,22 +510,20 @@ def main():
     if args.compare and len(args.metrics_folders) > 1:
         # Generate comparison tables
         if not args.proving_only:
-            content_parts.append(generate_comparison_table(args.metrics_folders, "execution"))
+            content_parts.append(generate_comparison_table(args.metrics_folders, "execution", args.name_format))
         if not args.execution_only:
-            content_parts.append(generate_comparison_table(args.metrics_folders, "proving"))
+            content_parts.append(generate_comparison_table(args.metrics_folders, "proving", args.name_format))
     else:
         # Process individual folders
         for folder in args.metrics_folders:
-            gas_category = extract_gas_category_from_path(folder)
-            content_parts.append(f"## Gas Category: {gas_category}\n\n")
-            content_parts.append(f"Source: {folder}\n\n")
+            content_parts.append(f"## Folder: {folder}\n\n")
             
             metrics = load_metrics_from_folder(folder)
             
             if not args.proving_only:
-                content_parts.append(generate_execution_table(metrics))
+                content_parts.append(generate_execution_table(metrics, name_format=args.name_format))
             if not args.execution_only:
-                content_parts.append(generate_proving_table(metrics))
+                content_parts.append(generate_proving_table(metrics, name_format=args.name_format))
             
             if args.statistics:
                 content_parts.append(generate_statistics_section(metrics))
