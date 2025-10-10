@@ -1,15 +1,17 @@
 # Simplified Test File Naming Scheme
 
-This document explains the simplified naming scheme for test files in the zkevm-benchmark-workload project.
+This document explains the simplified naming scheme for test files in the zkEVM benchmark workload project.
 
 ## Overview
 
-The original test file names follow a complex pattern:
+The original test file names follow a complex pattern that includes redundant information:
+
 ```
 test_file.py::test_function[fork_Prague-benchmark-gas-value_1M-blockchain_test-{additional_params}].json
 ```
 
 The simplified naming scheme extracts only the meaningful additional parameters:
+
 ```
 {category}_{additional_params}.json
 ```
@@ -119,3 +121,17 @@ The script can generate a shell script (`rename_tests.sh`) that contains the act
 - Common parameters that are the same across all tests are automatically filtered out
 - The script preserves the original files and only shows proposed renames in dry-run mode
 - Generated shell scripts can be reviewed before execution
+
+## Integration with Results Generation
+
+The simplified naming scheme is integrated with the results generation scripts:
+
+```bash
+# Use simplified names in markdown tables
+python3 scripts/generate_markdown_tables.py --name-format simplified zkevm-metrics-1M
+
+# Use display names (which incorporate simplified naming)
+python3 scripts/generate_markdown_tables.py --name-format display zkevm-metrics-1M
+```
+
+This makes the generated reports much more readable and easier to understand.

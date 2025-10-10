@@ -35,7 +35,11 @@ zkGas profiling is a comprehensive framework for measuring and comparing the res
 
 4. **Run OPCODE Profiling**
    ```bash
+   # Run on all gas categories
    ./scripts/run-gas-categorized-benchmarks.sh
+   
+   # Or run on a single fixture file
+   ./scripts/run-single-file-benchmark.sh ./fixtures/block_12345.json
    ```
 
 5. **Analyze Resource Requirements**
@@ -67,7 +71,10 @@ The `benchmark-results/` directory provides organized access to profiling result
 
 ## Next Steps
 
+- [Scripts](/scripts) - Comprehensive documentation for all automation scripts
 - [Gas Categorized Fixtures](/gas-categorized-fixtures) - Learn how to generate test fixtures for opcode profiling
 - [Gas Categorized Benchmarks](/gas-categorized-benchmarks) - Run opcode profiling across different gas categories
+- [Single File Benchmark](/single-file-benchmark) - Run benchmarks on individual fixture files
 - [Markdown Tables](/markdown-tables) - Generate and analyze resource requirement results
+- [Simplified Naming](/simplified-naming) - Understand the test file naming scheme
 - [Benchmark Results](/benchmark-results) - View and organize generated profiling results

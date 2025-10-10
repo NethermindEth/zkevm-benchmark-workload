@@ -1,6 +1,6 @@
-# Scripts Directory
+# Scripts Documentation
 
-This directory contains comprehensive scripts for running benchmarks, analyzing results, and managing the zkEVM benchmark workload system.
+This page provides comprehensive documentation for all scripts in the zkEVM benchmark workload system. These scripts handle benchmark execution, results analysis, fixture management, and various utilities.
 
 ## Overview
 
@@ -13,21 +13,21 @@ The scripts are organized into several categories:
 
 ## Benchmark Execution Scripts
 
-### `run-single-file-benchmark.sh`
+### Single File Benchmark
 
-Runs ere-hosts benchmark on a single fixture file instead of a folder. This script utilizes the new `--input-file` option to benchmark individual fixtures.
+The `run-single-file-benchmark.sh` script allows you to run benchmarks on individual fixture files instead of entire folders.
 
-**Usage:**
+#### Usage
 
 ```bash
 ./scripts/run-single-file-benchmark.sh <FIXTURE_FILE> [OPTIONS]
 ```
 
-**Arguments:**
+#### Arguments
 
 - `FIXTURE_FILE`: Path to the fixture file to benchmark
 
-**Key Options:**
+#### Key Options
 
 - `--dry-run`: Show what would be executed without running
 - `--action <ACTION>`: Benchmark action (default: prove)
@@ -37,7 +37,7 @@ Runs ere-hosts benchmark on a single fixture file instead of a folder. This scri
 - `--output-dir <DIR>`: Output directory for metrics (default: ./zkevm-metrics-single)
 - `--memory-tracking`: Enable memory tracking (default: false)
 
-**Examples:**
+#### Examples
 
 ```bash
 # Run benchmark on a single fixture file with defaults
@@ -53,17 +53,17 @@ Runs ere-hosts benchmark on a single fixture file instead of a folder. This scri
 ./scripts/run-single-file-benchmark.sh ./fixtures/block_12345.json --dry-run
 ```
 
-### `run-gas-categorized-benchmarks.sh`
+### Gas Categorized Benchmarks
 
-Runs ere-hosts benchmarks on each gas-categorized fixtures folder and outputs results to metrics folders.
+The `run-gas-categorized-benchmarks.sh` script runs benchmarks on each gas-categorized fixtures folder and outputs results to metrics folders.
 
-**Usage:**
+#### Usage
 
 ```bash
 ./scripts/run-gas-categorized-benchmarks.sh [OPTIONS]
 ```
 
-**Key Options:**
+#### Key Options
 
 - `--dry-run`: Show what would be executed without running
 - `--action <ACTION>`: Benchmark action (default: prove)
@@ -73,7 +73,7 @@ Runs ere-hosts benchmarks on each gas-categorized fixtures folder and outputs re
 - `--gas-category <CATEGORY>`: Run on specific gas category only
 - `--memory-tracking`: Enable memory tracking (default: false)
 
-**Example:**
+#### Examples
 
 ```bash
 # Run all gas categories with default settings
@@ -88,17 +88,17 @@ Runs ere-hosts benchmarks on each gas-categorized fixtures folder and outputs re
 
 ## Results Analysis Scripts
 
-### `generate_markdown_tables.py`
+### Markdown Table Generator
 
-Generates markdown tables from benchmark results stored in JSON files.
+The `generate_markdown_tables.py` script generates markdown tables from benchmark results stored in JSON files.
 
-**Usage:**
+#### Usage
 
 ```bash
 python3 scripts/generate_markdown_tables.py [OPTIONS] <metrics_folder> [<metrics_folder2> ...]
 ```
 
-**Key Options:**
+#### Key Options
 
 - `--output, -o <file>`: Output file (default: benchmark_results.md)
 - `--format, -f <format>`: Output format: markdown, html, csv (default: markdown)
@@ -108,7 +108,7 @@ python3 scripts/generate_markdown_tables.py [OPTIONS] <metrics_folder> [<metrics
 - `--statistics`: Include statistical analysis
 - `--name-format <format>`: Format for benchmark names (original, display, simplified, category)
 
-**Examples:**
+#### Examples
 
 ```bash
 # Generate tables from single metrics folder
@@ -122,17 +122,17 @@ python3 scripts/generate_markdown_tables.py --compare \
 python3 scripts/generate_markdown_tables.py --statistics --name-format display --output results.md zkevm-metrics-1M
 ```
 
-### `generate_results.sh`
+### Results Generator Wrapper
 
-Convenient wrapper script for generating markdown tables with common use cases.
+The `generate_results.sh` script provides a convenient wrapper for generating markdown tables with common use cases.
 
-**Usage:**
+#### Usage
 
 ```bash
 ./scripts/generate_results.sh [OPTIONS]
 ```
 
-**Key Options:**
+#### Key Options
 
 - `--all`: Generate tables for all available gas categories
 - `--compare`: Compare all available gas categories
@@ -143,7 +143,7 @@ Convenient wrapper script for generating markdown tables with common use cases.
 - `--name-format <format>`: Format for benchmark names (default: display)
 - `--open`: Open the generated file after creation
 
-**Examples:**
+#### Examples
 
 ```bash
 # Generate tables for all categories
@@ -158,33 +158,33 @@ Convenient wrapper script for generating markdown tables with common use cases.
 
 ## Comparison Scripts
 
-### `compare_executions.py`
+### Execution Comparison
 
-Compares execution metrics between baseline and optimized runs, focusing on region cycles and total execution cycles.
+The `compare_executions.py` script compares execution metrics between baseline and optimized runs, focusing on region cycles and total execution cycles.
 
-**Usage:**
+#### Usage
 
 ```bash
 python3 scripts/compare_executions.py <baseline_folder> <optimized_folder>
 ```
 
-**Features:**
+#### Features
 
 - Detailed speedup analysis by region
 - Statistical analysis with best/worst performers
 - Overall performance summary with total cycles
 
-### `compare_provings.py`
+### Proving Comparison
 
-Compares proving time metrics between baseline and optimized runs.
+The `compare_provings.py` script compares proving time metrics between baseline and optimized runs.
 
-**Usage:**
+#### Usage
 
 ```bash
 python3 scripts/compare_provings.py <baseline_folder> <optimized_folder>
 ```
 
-**Features:**
+#### Features
 
 - Proving time speedup analysis
 - Time savings calculations
@@ -192,43 +192,43 @@ python3 scripts/compare_provings.py <baseline_folder> <optimized_folder>
 
 ## Fixture Management Scripts
 
-### `generate-gas-categorized-fixtures.sh`
+### Gas Categorized Fixtures
 
-Generates gas-categorized fixtures for benchmarking by running the witness-generator-cli for each gas category.
+The `generate-gas-categorized-fixtures.sh` script generates gas-categorized fixtures for benchmarking by running the witness-generator-cli for each gas category.
 
-**Usage:**
+#### Usage
 
 ```bash
 ./scripts/generate-gas-categorized-fixtures.sh [EEST_TAG] [BASE_OUTPUT_DIR]
 ```
 
-**Features:**
+#### Features
 
 - Generates fixtures for all gas categories (1M, 10M, 30M, 45M, 60M, 100M, 500M)
 - Supports custom EEST tags and output directories
 - Dry-run mode for previewing operations
 
-### `download-and-extract-fixtures.sh`
+### Fixture Download
 
-Downloads and extracts test fixtures from the ethereum/execution-spec-tests repository.
+The `download-and-extract-fixtures.sh` script downloads and extracts test fixtures from the ethereum/execution-spec-tests repository.
 
-**Usage:**
+#### Usage
 
 ```bash
 ./scripts/download-and-extract-fixtures.sh [TAG|latest] [DEST_DIR]
 ```
 
-**Features:**
+#### Features
 
 - Automatic latest release detection
 - Multiple download strategies with retries
 - Support for different fixture types (benchmark, stable, etc.)
 
-### `migrate_mainnet_fixtures_chainconfig.py`
+### Chain Config Migration
 
-Processes zkevm fixture JSON files by updating chain configuration to a standardized format.
+The `migrate_mainnet_fixtures_chainconfig.py` script processes zkevm fixture JSON files by updating chain configuration to a standardized format.
 
-**Usage:**
+#### Usage
 
 ```bash
 python3 scripts/migrate_mainnet_fixtures_chainconfig.py <input_folder> [-o <output_folder>]
@@ -236,60 +236,52 @@ python3 scripts/migrate_mainnet_fixtures_chainconfig.py <input_folder> [-o <outp
 
 ## Utility Scripts
 
-### `simplify_test_names.py`
+### Test Name Simplification
 
-Simplifies complex test file names by extracting meaningful parameters and removing redundant information.
+The `simplify_test_names.py` script simplifies complex test file names by extracting meaningful parameters and removing redundant information.
 
-**Usage:**
+#### Usage
 
 ```bash
 python3 scripts/simplify_test_names.py <directory> [--dry-run] [--execute] [--create-script]
 ```
 
-**Features:**
+#### Features
 
 - Converts complex names to readable format
 - Dry-run mode for previewing changes
 - Shell script generation for batch renaming
 
-### `test_name_parser.py`
+### Test Name Parser
 
-Provides parsing functionality for complex test file names, used by other scripts for name formatting.
+The `test_name_parser.py` script provides parsing functionality for complex test file names, used by other scripts for name formatting.
 
-**Features:**
+#### Features
 
 - Extracts test categories, functions, and parameters
 - Generates display names and simplified names
 - Supports multiple naming formats
-
-### `update-docs-with-results.sh`
-
-Updates documentation with latest benchmark results (if implemented).
 
 ## Complete Workflow Examples
 
 ### Standard Benchmark Workflow
 
 1. **Download fixtures:**
-
    ```bash
    ./scripts/download-and-extract-fixtures.sh
    ```
 
 2. **Generate gas-categorized fixtures:**
-
    ```bash
    ./scripts/generate-gas-categorized-fixtures.sh
    ```
 
 3. **Run benchmarks:**
-
    ```bash
    ./scripts/run-gas-categorized-benchmarks.sh
    ```
 
 4. **Generate results:**
-
    ```bash
    ./scripts/generate_results.sh --compare --statistics --open
    ```
@@ -297,19 +289,16 @@ Updates documentation with latest benchmark results (if implemented).
 ### Performance Comparison Workflow
 
 1. **Run baseline benchmarks:**
-
    ```bash
    ./scripts/run-gas-categorized-benchmarks.sh --zkvm risc0
    ```
 
 2. **Run optimized benchmarks:**
-
    ```bash
    ./scripts/run-gas-categorized-benchmarks.sh --zkvm sp1
    ```
 
 3. **Compare results:**
-
    ```bash
    python3 scripts/compare_executions.py zkevm-metrics-risc0-1M zkevm-metrics-sp1-1M
    python3 scripts/compare_provings.py zkevm-metrics-risc0-1M zkevm-metrics-sp1-1M
@@ -318,13 +307,11 @@ Updates documentation with latest benchmark results (if implemented).
 ### Single File Testing Workflow
 
 1. **Test individual fixture:**
-
    ```bash
    ./scripts/run-single-file-benchmark.sh ./fixtures/block_12345.json --zkvm sp1
    ```
 
 2. **Generate results for single file:**
-
    ```bash
    python3 scripts/generate_markdown_tables.py zkevm-metrics-single
    ```

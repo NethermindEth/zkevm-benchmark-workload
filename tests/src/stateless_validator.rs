@@ -37,9 +37,11 @@ mod tests {
 
         let output_folder = tempdir().unwrap();
         let inputs = stateless_validator::stateless_validator_inputs(
-            &bench_fixtures_dir
-                .path()
-                .join("mainnet-zkevm-fixtures-input"),
+            stateless_validator::InputSource::Folder(
+                &bench_fixtures_dir
+                    .path()
+                    .join("mainnet-zkevm-fixtures-input")
+            ),
             ExecutionClient::Reth,
         )
         .unwrap();
@@ -70,7 +72,7 @@ mod tests {
 
         let output_folder = tempdir().unwrap();
         let inputs = stateless_validator::stateless_validator_inputs(
-            bench_fixtures_dir.path(),
+            stateless_validator::InputSource::Folder(bench_fixtures_dir.path()),
             ExecutionClient::Reth,
         )
         .unwrap();
@@ -110,7 +112,7 @@ mod tests {
 
             let output_folder = tempdir().unwrap();
             let inputs = stateless_validator::stateless_validator_inputs(
-                bench_fixtures_dir.path(),
+                stateless_validator::InputSource::Folder(bench_fixtures_dir.path()),
                 el.clone(),
             )
             .unwrap();

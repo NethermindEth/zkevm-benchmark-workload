@@ -21,16 +21,25 @@ export default defineConfig({
       link: '/gas-categorized-benchmarks',
     },
     {
+      text: 'Single File Benchmark',
+      link: '/single-file-benchmark',
+    },
+    {
       text: 'Markdown Tables',
       link: '/markdown-tables',
     },
     {
-      text: 'Benchmark Results',
-      link: '/benchmark-results',
+      text: 'Simplified Naming',
+      link: '/simplified-naming',
     },
     {
-      text: 'Example',
-      link: '/example',
+      text: 'Benchmark Results',
+      items: [
+        {
+          text: '1M, sp1',
+          link: '/benchmark-results/gas-categorized/1m-sp1',
+        },
+      ]
     },
   ],
 })
