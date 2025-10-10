@@ -29,6 +29,15 @@ use zkvm_interface::Input;
 
 use crate::guest_programs::{GuestIO, GuestMetadata, OutputVerifier};
 
+/// Input source for benchmark fixtures
+#[derive(Debug, Clone)]
+pub enum InputSource<'a> {
+    /// Process all files in a folder
+    Folder(&'a Path),
+    /// Process a single file
+    File(&'a Path),
+}
+
 /// Execution client variants.
 #[derive(Debug, Clone, PartialEq, Eq, EnumString, AsRefStr)]
 #[strum(ascii_case_insensitive)]
@@ -47,11 +56,16 @@ pub struct BlockMetadata {
 impl GuestMetadata for BlockMetadata {}
 
 /// Generate inputs for the stateless validator guest program.
-pub fn stateless_validator_inputs(
-    input_folder: &Path,
+pub fn stateless_validator_inputs<'a>(
+    input: InputSource<'a>,
     el: ExecutionClient,
 ) -> Result<Vec<GuestIO<BlockMetadata, ProgramOutputVerifier>>> {
-    let guest_inputs = read_benchmark_fixtures_folder(input_folder)?
+    let block_and_witnesses = match input {
+        InputSource::Folder(path) => read_benchmark_fixtures_folder(path)?,
+        InputSource::File(path) => vec![read_single_fixture_file(path)?],
+    };
+
+    let guest_inputs = block_and_witnesses
         .into_iter()
         .map(|bw| {
             Ok(GuestIO {
@@ -70,6 +84,15 @@ pub fn stateless_validator_inputs(
         .collect::<Result<Vec<_>>>()?;
 
     Ok(guest_inputs)
+}
+
+/// Reads a single benchmark fixture file and returns a block and witness pair.
+pub fn read_single_fixture_file(path: &Path) -> Result<BlockAndWitness> {
+    let content = std::fs::read(path)?;
+    let bw: BlockAndWitness = serde_json::from_slice(&content).map_err(|e| {
+        anyhow::anyhow!("Failed to parse {}: {}", path.display(), e)
+    })?;
+    Ok(bw)
 }
 
 /// Reads the benchmark fixtures folder and returns a list of block and witness pairs.

@@ -4,6 +4,41 @@ This directory contains various scripts for running benchmarks and analyzing res
 
 ## Benchmark Execution Scripts
 
+### `run-single-file-benchmark.sh`
+Runs ere-hosts benchmark on a single fixture file instead of a folder. This script utilizes the new `--input-file` option to benchmark individual fixtures.
+
+**Usage:**
+```bash
+./scripts/run-single-file-benchmark.sh <FIXTURE_FILE> [OPTIONS]
+```
+
+**Arguments:**
+- `FIXTURE_FILE`: Path to the fixture file to benchmark
+
+**Key Options:**
+- `--dry-run`: Show what would be executed without running
+- `--action <ACTION>`: Benchmark action (default: prove)
+- `--resource <RESOURCE>`: Resource type (default: gpu)
+- `--zkvm <ZKVM>`: zkVM implementation (default: risc0)
+- `--execution-client <CLIENT>`: Execution client (default: reth)
+- `--output-dir <DIR>`: Output directory for metrics (default: ./zkevm-metrics-single)
+- `--memory-tracking`: Enable memory tracking (default: false)
+
+**Examples:**
+```bash
+# Run benchmark on a single fixture file with defaults
+./scripts/run-single-file-benchmark.sh ./fixtures/block_12345.json
+
+# Run with custom action and resource
+./scripts/run-single-file-benchmark.sh ./fixtures/block_12345.json --action execute --resource cpu
+
+# Run with specific zkVM and execution client
+./scripts/run-single-file-benchmark.sh ./fixtures/block_12345.json --zkvm sp1 --execution-client ethrex
+
+# Preview what would be executed
+./scripts/run-single-file-benchmark.sh ./fixtures/block_12345.json --dry-run
+```
+
 ### `run-gas-categorized-benchmarks.sh`
 Runs ere-hosts benchmarks on each gas-categorized fixtures folder and outputs results to metrics folders.
 

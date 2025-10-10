@@ -5,8 +5,8 @@
 use benchmark_runner::{
     block_encoding_length_program, empty_program,
     runner::{Action, RunConfig, get_zkvm_instances, run_benchmark},
-    stateless_validator::{self},
-    stateless_executor::{self},
+    stateless_validator::{self, InputSource as ValidatorInputSource},
+    stateless_executor::{self, InputSource as ExecutorInputSource},
 };
 use clap::{Parser, Subcommand, ValueEnum};
 use ere_dockerized::ErezkVM;
@@ -51,7 +51,10 @@ enum GuestProgramCommand {
     StatelessExecutor {
         /// Input folder for benchmark fixtures
         #[arg(short, long, default_value = "zkevm-fixtures-input")]
-        input_folder: PathBuf,
+        input_folder: Option<PathBuf>,
+        /// Input file for benchmark fixture
+        #[arg(long)]
+        input_file: Option<PathBuf>,
         #[arg(short, long)]
         execution_client: ExecutionClient,
     },
@@ -60,7 +63,10 @@ enum GuestProgramCommand {
     StatelessValidator {
         /// Input folder for benchmark fixtures
         #[arg(short, long, default_value = "zkevm-fixtures-input")]
-        input_folder: PathBuf,
+        input_folder: Option<PathBuf>,
+        /// Input file for benchmark fixture
+        #[arg(long)]
+        input_file: Option<PathBuf>,
         #[arg(short, long)]
         execution_client: ExecutionClient,
     },
@@ -161,6 +167,38 @@ impl From<ExecutionClient> for stateless_executor::ExecutionClient {
     }
 }
 
+/// Validates input arguments and creates the appropriate InputSource
+fn validate_and_create_input_source<'a>(
+    input_folder: Option<&'a PathBuf>,
+    input_file: Option<&'a PathBuf>,
+) -> Result<ExecutorInputSource<'a>, Box<dyn std::error::Error>> {
+    match (input_folder, input_file) {
+        (Some(folder), None) => Ok(ExecutorInputSource::Folder(folder.as_path())),
+        (None, Some(file)) => Ok(ExecutorInputSource::File(file.as_path())),
+        (Some(_), Some(_)) => Err("Cannot specify both --input-folder and --input-file. Please choose one.".into()),
+        (None, None) => {
+            // Default to folder if neither is specified
+            Ok(ExecutorInputSource::Folder(Path::new("zkevm-fixtures-input")))
+        }
+    }
+}
+
+/// Validates input arguments and creates the appropriate InputSource for validator
+fn validate_and_create_validator_input_source<'a>(
+    input_folder: Option<&'a PathBuf>,
+    input_file: Option<&'a PathBuf>,
+) -> Result<ValidatorInputSource<'a>, Box<dyn std::error::Error>> {
+    match (input_folder, input_file) {
+        (Some(folder), None) => Ok(ValidatorInputSource::Folder(folder.as_path())),
+        (None, Some(file)) => Ok(ValidatorInputSource::File(file.as_path())),
+        (Some(_), Some(_)) => Err("Cannot specify both --input-folder and --input-file. Please choose one.".into()),
+        (None, None) => {
+            // Default to folder if neither is specified
+            Ok(ValidatorInputSource::Folder(Path::new("zkevm-fixtures-input")))
+        }
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
@@ -185,14 +223,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match &cli.guest_program {
         GuestProgramCommand::StatelessExecutor {
             input_folder,
+            input_file,
             execution_client,
         } => {
+            let input_source = validate_and_create_input_source(
+                input_folder.as_ref().map(|p| p),
+                input_file.as_ref().map(|p| p),
+            )?;
+            let input_description = match &input_source {
+                ExecutorInputSource::Folder(path) => format!("folder: {}", path.display()),
+                ExecutorInputSource::File(path) => format!("file: {}", path.display()),
+            };
             info!(
-                "Running stateless-executor benchmark for input folder: {}",
-                input_folder.display()
+                "Running stateless-executor benchmark for input {}",
+                input_description
             );
             let guest_io = stateless_executor::stateless_executor_inputs(
-                input_folder.as_path(),
+                input_source,
                 (*execution_client).into(),
             )?;
             let guest_path = execution_client.guest_rel_path("stateless-executor");
@@ -211,14 +258,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         GuestProgramCommand::StatelessValidator {
             input_folder,
+            input_file,
             execution_client,
         } => {
+            let input_source = validate_and_create_validator_input_source(
+                input_folder.as_ref().map(|p| p),
+                input_file.as_ref().map(|p| p),
+            )?;
+            let input_description = match &input_source {
+                ValidatorInputSource::Folder(path) => format!("folder: {}", path.display()),
+                ValidatorInputSource::File(path) => format!("file: {}", path.display()),
+            };
             info!(
-                "Running stateless-validator benchmark for input folder: {}",
-                input_folder.display()
+                "Running stateless-validator benchmark for input {}",
+                input_description
             );
             let guest_io = stateless_validator::stateless_validator_inputs(
-                input_folder.as_path(),
+                input_source,
                 (*execution_client).into(),
             )?;
             let guest_path = execution_client.guest_rel_path("stateless-validator");
