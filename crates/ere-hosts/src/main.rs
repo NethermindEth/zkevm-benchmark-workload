@@ -50,7 +50,7 @@ enum GuestProgramCommand {
     /// Ethereum Stateless Executor
     StatelessExecutor {
         /// Input folder for benchmark fixtures
-        #[arg(short, long, default_value = "zkevm-fixtures-input")]
+        #[arg(short, long)]
         input_folder: Option<PathBuf>,
         /// Input file for benchmark fixture
         #[arg(long)]
@@ -62,7 +62,7 @@ enum GuestProgramCommand {
     /// Ethereum Stateless Validator
     StatelessValidator {
         /// Input folder for benchmark fixtures
-        #[arg(short, long, default_value = "zkevm-fixtures-input")]
+        #[arg(short, long)]
         input_folder: Option<PathBuf>,
         /// Input file for benchmark fixture
         #[arg(long)]
