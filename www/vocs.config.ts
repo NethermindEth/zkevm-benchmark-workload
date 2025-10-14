@@ -39,6 +39,10 @@ export default defineConfig({
           text: '1M, sp1',
           link: '/benchmark-results/gas-categorized/1m-sp1',
         },
+        {
+          text: '1M, risc0',
+          link: '/benchmark-results/gas-categorized/1m-risc0',
+        },
       ]
     },
   ],
