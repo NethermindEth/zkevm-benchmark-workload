@@ -190,6 +190,100 @@ python3 scripts/compare_provings.py <baseline_folder> <optimized_folder>
 - Time savings calculations
 - Efficiency gain reporting
 
+### CSV Export Comparison
+
+The `export_comparison_csv.py` script exports SP1 vs RISC0 comparison data to CSV format for analysis in spreadsheet applications and data processing tools.
+
+#### Usage
+
+```bash
+python3 scripts/export_comparison_csv.py \
+  --risc0-folder <risc0_metrics_folder> \
+  --sp1-folder <sp1_metrics_folder> \
+  [--output <output_file.csv>]
+```
+
+#### Arguments
+
+- `--risc0-folder`: Path to RISC0 metrics folder (required)
+- `--sp1-folder`: Path to SP1 metrics folder (required)
+- `--output`: Output CSV file (default: sp1_vs_risc0_comparison.csv)
+
+#### Features
+
+- Exports proving time, proof size, and memory usage comparisons
+- Calculates speedup, proof size ratio, and memory ratio
+- CSV format for easy import into Excel, Google Sheets, pandas, R
+- Supports multiple gas categories
+
+#### Example
+
+```bash
+# Export comparison for 1M gas category
+python3 scripts/export_comparison_csv.py \
+  --risc0-folder zkevm-metrics-risc0-1M \
+  --sp1-folder zkevm-metrics-sp1-1M \
+  --output comparisons/1M-comparison.csv
+```
+
+For detailed usage examples and data analysis workflows, see the [Export Comparison CSV](/export-comparison-csv) guide.
+
+### SP1 vs RISC0 Comparison Report
+
+The `compare_sp1_risc0.py` script generates comprehensive comparison reports between SP1 and RISC0 zkVM implementations in both text and markdown formats.
+
+#### Usage
+
+```bash
+python3 scripts/compare_sp1_risc0.py \
+  --risc0-folder <risc0_metrics_folder> \
+  --sp1-folder <sp1_metrics_folder> \
+  [--format <text|markdown>] \
+  [--output <output_file>] \
+  [--top-n <number>]
+```
+
+#### Arguments
+
+- `--risc0-folder`: Path to RISC0 metrics folder (required)
+- `--sp1-folder`: Path to SP1 metrics folder (required)
+- `--format`: Output format - `text` (console) or `markdown` (default: text)
+- `--output`: Output file path for markdown (optional, prints to stdout if not specified)
+- `--top-n`: Number of top performers to show (default: 10)
+
+#### Features
+
+- **Text format**: Interactive console output with statistics and tables
+- **Markdown format**: Professional documentation-ready reports
+- **Statistical analysis**: Comprehensive performance metrics
+- **Top performers**: Identifies best/worst performers for each zkVM
+- **Test coverage**: Shows common and unique tests between zkVMs
+- **Executive summary**: Quick overview of key performance indicators
+
+#### Examples
+
+```bash
+# Quick text comparison
+python3 scripts/compare_sp1_risc0.py \
+  --risc0-folder zkevm-metrics-risc0-1M \
+  --sp1-folder zkevm-metrics-sp1-1M
+
+# Generate markdown report
+python3 scripts/compare_sp1_risc0.py \
+  --risc0-folder zkevm-metrics-risc0-1M \
+  --sp1-folder zkevm-metrics-sp1-1M \
+  --format markdown \
+  --output benchmark-results/comparisons/1M-summary.md
+
+# Show top 20 performers
+python3 scripts/compare_sp1_risc0.py \
+  --risc0-folder zkevm-metrics-risc0-1M \
+  --sp1-folder zkevm-metrics-sp1-1M \
+  --top-n 20
+```
+
+For detailed usage examples, output format details, and integration workflows, see the [Compare SP1 vs RISC0](/compare-sp1-risc0) guide.
+
 ## Fixture Management Scripts
 
 ### Gas Categorized Fixtures

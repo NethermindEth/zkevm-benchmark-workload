@@ -41,23 +41,58 @@ import json
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, NamedTuple
 import statistics
 from datetime import datetime
 
 # Import the test name parser
 try:
-    from test_name_parser import get_display_name, get_simplified_name, get_category, parse_test_name
+    from test_name_parser import get_display_name, get_simplified_name, get_category, parse_test_name, TestInfo
 except ImportError:
     # Fallback if the parser is not available
+    class TestInfo(NamedTuple):  # type: ignore[no-redef]
+        """Container for parsed test information."""
+        category: str
+        function: str
+        parameters: List[str]
+        simplified_name: str
+        display_name: str
+    
     def get_display_name(filename: str) -> str:
         return filename
     def get_simplified_name(filename: str) -> str:
         return filename
     def get_category(filename: str) -> str:
         return "unknown"
-    def parse_test_name(filename: str):
-        return None
+    def parse_test_name(filename: str) -> TestInfo:
+        return TestInfo(
+            category="unknown",
+            function="",
+            parameters=[],
+            simplified_name=filename,
+            display_name=filename
+        )
+
+class HardwareInfo:
+    """Container for hardware information."""
+    
+    def __init__(self):
+        self.cpu_model: Optional[str] = None
+        self.total_ram_gib: Optional[int] = None
+        self.gpus: List[Dict[str, str]] = []
+    
+    def __str__(self) -> str:
+        """Format hardware info as a readable string."""
+        parts = []
+        if self.cpu_model:
+            parts.append(f"CPU: {self.cpu_model}")
+        if self.total_ram_gib:
+            parts.append(f"RAM: {self.total_ram_gib} GiB")
+        if self.gpus:
+            gpu_models = [gpu.get("model", "Unknown") for gpu in self.gpus]
+            parts.append(f"GPU: {', '.join(gpu_models)}")
+        return " | ".join(parts) if parts else "Hardware info not available"
+
 
 class BenchmarkMetrics:
     """Container for benchmark metrics data."""
@@ -121,6 +156,29 @@ class BenchmarkMetrics:
     def get_gas_used(self) -> Optional[int]:
         """Get gas used from metadata."""
         return self.metadata.get("block_used_gas")
+
+
+def load_hardware_info(folder_path: str) -> Optional[HardwareInfo]:
+    """Load hardware information from a folder's hardware.json file."""
+    folder = Path(folder_path)
+    hardware_file = folder / "hardware.json"
+    
+    if not hardware_file.exists():
+        return None
+    
+    try:
+        with open(hardware_file, 'r') as f:
+            data = json.load(f)
+            
+            hardware = HardwareInfo()
+            hardware.cpu_model = data.get("cpu_model")
+            hardware.total_ram_gib = data.get("total_ram_gib")
+            hardware.gpus = data.get("gpus", [])
+            
+            return hardware
+    except (json.JSONDecodeError, FileNotFoundError) as e:
+        print(f"Warning: Could not load hardware info from {hardware_file}: {e}", file=sys.stderr)
+        return None
 
 
 def format_benchmark_name(name: str, name_format: str = "original") -> str:
@@ -379,6 +437,7 @@ def generate_summary_table(metrics_folders: List[str]) -> str:
     
     for folder in metrics_folders:
         metrics = load_metrics_from_folder(folder)
+        hardware = load_hardware_info(folder)
         
         execution_count = sum(1 for m in metrics.values() if m.has_execution())
         proving_count = sum(1 for m in metrics.values() if m.has_proving())
@@ -426,18 +485,21 @@ def generate_summary_table(metrics_folders: List[str]) -> str:
             'avg_cycles': avg_cycles,
             'avg_duration': avg_duration,
             'avg_proof_size': avg_proof_size,
-            'avg_proving_time': avg_proving_time
+            'avg_proving_time': avg_proving_time,
+            'hardware': hardware
         })
     
     if not summary_data:
         return "## Summary\n\nNo data available.\n\n"
     
-    header = "| Folder | Total Benchmarks | Execution | Proving | Avg Cycles | Avg Duration (ms) | Avg Proof Size (bytes) | Avg Proving Time (ms) |\n"
-    separator = "|---|---|---|---|---|---|---|---|\n"
+    header = "| Folder | Hardware | Total Benchmarks | Execution | Proving | Avg Cycles | Avg Duration (ms) | Avg Proof Size (bytes) | Avg Proving Time (ms) |\n"
+    separator = "|---|---|---|---|---|---|---|---|---|\n"
     
     rows = []
     for data in sorted(summary_data, key=lambda x: str(x['folder'])):
-        row = f"| {data['folder']} | {data['total_benchmarks']} | "
+        row = f"| {data['folder']} | "
+        row += str(data['hardware']) if data['hardware'] else "N/A"
+        row += f" | {data['total_benchmarks']} | "
         row += f"{data['execution_benchmarks']} | {data['proving_benchmarks']} | "
         row += f"{data['avg_cycles']:,.0f}" if isinstance(data['avg_cycles'], int) and data['avg_cycles'] > 0 else "N/A"
         row += " | "
@@ -504,6 +566,16 @@ def main():
     
     # Generate summary table if comparing multiple folders
     if args.compare and len(args.metrics_folders) > 1:
+        # Add hardware information section
+        content_parts.append("## Hardware Configurations\n\n")
+        for folder in args.metrics_folders:
+            hardware = load_hardware_info(folder)
+            if hardware:
+                content_parts.append(f"**{folder}**: {hardware}\n\n")
+            else:
+                content_parts.append(f"**{folder}**: Hardware info not available\n\n")
+        content_parts.append("\n")
+        
         content_parts.append(generate_summary_table(args.metrics_folders))
     
     # Process each folder or generate comparison
@@ -517,6 +589,11 @@ def main():
         # Process individual folders
         for folder in args.metrics_folders:
             content_parts.append(f"## Folder: {folder}\n\n")
+            
+            # Add hardware information
+            hardware = load_hardware_info(folder)
+            if hardware:
+                content_parts.append(f"**Hardware Configuration:** {hardware}\n\n")
             
             metrics = load_metrics_from_folder(folder)
             

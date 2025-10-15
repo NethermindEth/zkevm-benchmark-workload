@@ -33,15 +33,32 @@ export default defineConfig({
       link: '/simplified-naming',
     },
     {
+      text: 'Export Comparison CSV',
+      link: '/export-comparison-csv',
+    },
+    {
+      text: 'Compare SP1 vs RISC0',
+      link: '/compare-sp1-risc0',
+    },
+    {
       text: 'Benchmark Results',
       items: [
         {
-          text: '1M, sp1',
-          link: '/benchmark-results/gas-categorized/1m-sp1',
-        },
-        {
-          text: '1M, risc0',
-          link: '/benchmark-results/gas-categorized/1m-risc0',
+          text: '1M',
+          items: [
+            {
+              text: 'sp1',
+              link: '/benchmark-results/gas-categorized/1m/1m-sp1',
+            },
+            {
+              text: 'risc0',
+              link: '/benchmark-results/gas-categorized/1m/1m-risc0',
+            },
+            {
+              text: 'summary',
+              link: '/benchmark-results/gas-categorized/1m/summary',
+            },
+          ],
         },
       ]
     },
