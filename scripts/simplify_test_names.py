@@ -249,7 +249,7 @@ class TestNameSimplifier:
             f.write('\n'.join(script_content))
         
         # Make the script executable
-        os.chmod(output_script, 0o755)
+        os.chmod(output_script, 0o700)
         
         print(f"\nRename script created: {output_script}")
         print("Run it with: ./rename_tests.sh")
