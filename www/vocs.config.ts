@@ -56,7 +56,7 @@ export default defineConfig({
             },
             {
               text: 'summary',
-              link: '/benchmark-results/gas-categorized/1m/summary',
+              link: '/benchmark-results/gas-categorized/1m/1m-summary',
             },
           ],
         },
