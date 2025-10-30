@@ -16,3 +16,4 @@ ere-guests/**/Cargo.lock
 
 # Node.js dependencies
 node_modules
+all-fixtures
