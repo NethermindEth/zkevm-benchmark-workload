@@ -6,6 +6,8 @@ Generated on: 2025-10-30 15:52:01
 
 **Hardware Configuration:** CPU: AMD EPYC 7543 32-Core Processor | RAM: 472 GiB | GPU: NVIDIA GeForce RTX 5090, NVIDIA GeForce RTX 5090, NVIDIA GeForce RTX 5090, NVIDIA GeForce RTX 5090
 
+No of GPU used: 1 of 4
+
 ## Proving Metrics
 
 | Benchmark | Gas Used | Proof Size (bytes) | Proving Time (ms) | Proving Time (s) | Peak Memory (MB) | Avg Memory (MB) | Initial Memory (MB) |
