@@ -35,6 +35,9 @@ Examples:
     
     # Use human-readable display names
     python3 generate_markdown_tables.py --name-format display zkevm-metrics-1M
+    
+    # Use opcode-focused display names (e.g., "EXP (Prague, 10M gas)")
+    python3 generate_markdown_tables.py --name-format opcode zkevm-metrics-1M
 """
 
 import json
@@ -72,6 +75,16 @@ except ImportError:
             simplified_name=filename,
             display_name=filename
         )
+
+# Import the opcode-focused test name formatter
+try:
+    from test_name_formatter import TestNameFormatter
+    _opcode_formatter = TestNameFormatter()
+    def get_opcode_display_name(filename: str) -> str:
+        return _opcode_formatter.format_test_name(filename)
+except ImportError:
+    def get_opcode_display_name(filename: str) -> str:
+        return filename
 
 class HardwareInfo:
     """Container for hardware information."""
@@ -187,7 +200,7 @@ def format_benchmark_name(name: str, name_format: str = "original") -> str:
     
     Args:
         name: The original benchmark name (may include parent directory)
-        name_format: Format to use ("original", "display", "simplified", "category")
+        name_format: Format to use ("original", "display", "simplified", "category", "opcode")
         
     Returns:
         Formatted benchmark name
@@ -208,6 +221,8 @@ def format_benchmark_name(name: str, name_format: str = "original") -> str:
         category = get_category(filename)
         simplified = get_simplified_name(filename)
         return f"[{category}] {simplified}"
+    elif name_format == "opcode":
+        return get_opcode_display_name(filename)
     else:
         return name
 
@@ -535,7 +550,7 @@ def main():
                        help="Only show proving metrics")
     parser.add_argument("--statistics", action="store_true",
                        help="Include statistical analysis")
-    parser.add_argument("--name-format", choices=["original", "display", "simplified", "category"],
+    parser.add_argument("--name-format", choices=["original", "display", "simplified", "category", "opcode"],
                        default="original", help="Format for benchmark names (default: original)")
     
     args = parser.parse_args()
