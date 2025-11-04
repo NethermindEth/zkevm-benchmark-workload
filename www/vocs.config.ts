@@ -62,5 +62,23 @@ export default defineConfig({
         },
       ]
     },
+    {
+      text: 'GPU Scaling Efficiency',
+      items: [
+        {
+          text: '1M Risc0 GPU Scaling Efficiency',
+          items: [
+            {
+              text: 'Proving Times',
+              link: '/gpu-scaling-efficiency/1m-risc0-proving-times',
+            },
+            {
+              text: 'Speedup & Efficiency',
+              link: '/gpu-scaling-efficiency/1m-risc0-speedup-efficiency',
+            },
+          ],
+        },
+      ]
+    },
   ],
 })
