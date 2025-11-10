@@ -2,6 +2,7 @@ use std::{fs, io, path::Path};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use guest_libs::chainconfig::ChainConfig;
 use reth_stateless::StatelessInput;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -17,8 +18,8 @@ pub struct BlockAndWitness {
     pub name: String,
     /// The block and witness pair for the test case.
     pub block_and_witness: StatelessInput,
-    /// Whether the stateless block validation is successful.
-    pub success: bool,
+    /// The chain configuration
+    pub chain_config: ChainConfig,
 }
 
 /// Errors that can occur during serialization or deserialization of `BlocksAndWitnesses`.

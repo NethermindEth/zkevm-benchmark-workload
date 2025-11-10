@@ -5,19 +5,13 @@ on:
   pull_request:
     branches: [ master ]
   workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 env:
   CARGO_TERM_COLOR: always
-  ERE_TAG: 0.0.11-8fe61ca
 
 jobs: 
   witness-generator:
     name: Generate EEST benchmark fixtures
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted-ghr, size-xl-x64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,10 +21,20 @@ jobs:
         with:
           components: clippy, rustfmt
       
-      - name: Generate benchmark fixtures
-        run: RUST_LOG=info cargo run -p witness-generator-cli --release -- tests --include 1M- --include Prague
+      - name: Download and Extract Fixtures
+        run: |
+          chmod +x ./scripts/download-and-extract-fixtures.sh
+          ./scripts/download-and-extract-fixtures.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C toolchain dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang libclang-dev
+      
+      - name: Generate benchmark fixtures
+        run: RUST_LOG=info cargo run -p witness-generator-cli --release -- tests --include 1M- --include Prague
 
       - name: Check zkevm-fixtures-input folder has at least 1 file
         run: |
@@ -42,96 +46,103 @@ jobs:
           fi
   
   stateless-validator:
-    name: "${{ format('{0} / {1} / {2}', matrix.el, matrix.test, matrix.zkvm) }}"
+    name: Stateless validator guest
     runs-on: [self-hosted-ghr, size-xl-x64]
     strategy:
       fail-fast: false
       matrix:
-        test:
-          - execute_empty_block
-          - execute_mainnet_blocks
-          - execute_invalid_blocks
-          - prove_empty_block
-        zkvm: [sp1, risc0]
-        el: [reth, ethrex]
-        exclude:
-          # Ethrex - still quite heavy to run in CI
-          - el: ethrex
-            test: execute_mainnet_blocks
-          - el: ethrex
-            test: execute_invalid_blocks
-          # Ethrex / Risc0 - see issue https://github.com/eth-act/ere/issues/121
-          - el: ethrex
-            zkvm: risc0
+        zkvm: [sp1]
+        action: [execute]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@nightly
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
+      
+      - name: Download and Extract Fixtures
+        run: |
+          chmod +x ./scripts/download-and-extract-fixtures.sh
+          ./scripts/download-and-extract-fixtures.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Install C toolchain dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential clang libclang-dev
       
-      - name: Pull ere images
-        run: |
-          for variant in "" "-${{ matrix.zkvm }}"; do
-            src="ghcr.io/eth-act/ere/ere-base${variant}:${ERE_TAG}"
-            dst="ere-base${variant}:${ERE_TAG}"
-            docker pull "$src"
-            docker tag "$src" "$dst"
-          done
+      - name: Generate benchmark fixtures
+        run: RUST_LOG=info cargo run -p witness-generator-cli --release -- tests --include 1M- --include Prague --include empty_block
 
       - name: Run benchmark
-        run: CI=1 RUST_LOG=info,sp1_core_executor=warn ZKVM=${{ matrix.zkvm }} EL=${{ matrix.el }} cargo test --release -p integration-tests -- --test-threads=1 ${{ matrix.test }}
+        run: RUST_LOG=info cargo run -p ere-hosts --release --features ${{ matrix.zkvm }} -- --action ${{ matrix.action }} stateless-validator
+      
+      - name: Check zkevm-metrics folder
+        run: |
+          find ./zkevm-metrics
+          if [ ! -d "./zkevm-metrics" ]; then
+            echo "zkevm-metrics folder does not exist"
+            exit 1
+          fi
+          if [ ! -f "./zkevm-metrics/hardware.json" ]; then
+            echo "hardware.json file does not exist in zkevm-metrics folder"
+            exit 1
+          fi
+          zkvm_folder=$(find ./zkevm-metrics -type d -name "${{ matrix.zkvm }}-*" | head -n 1)
+          if [ -z "$zkvm_folder" ]; then
+            echo "No ${{ matrix.zkvm }} folder found in zkevm-metrics"
+            exit 1
+          fi
+          ls -l ./zkevm-fixtures-input
+          ls -l $zkvm_folder
+          input_files_count=$(find ./zkevm-fixtures-input -type f | wc -l)
+          zkvm_files_count=$(find $zkvm_folder -type f | wc -l)
+          if [ "$input_files_count" -ne "$zkvm_files_count" ]; then
+            echo "Mismatch in number of files: zkevm-fixtures-input has $input_files_count files, $zkvm_folder has $zkvm_files_count files"
+            exit 1
+          fi
 
-  custom-guest:
-    name: "${{ format('{0} / {1}', matrix.test, matrix.zkvm) }}"
+  empty-program:
+    name: Empty program guest
     runs-on: [self-hosted-ghr, size-xl-x64]
     strategy:
       fail-fast: false
       matrix:
-        test:
-          - execute_empty_program
-          - execute_panic_guest
-          - prove_empty_program
-          - prove_panic_guest
-        zkvm: [sp1, risc0, zisk]
-        exclude:
-          # ZisK - ere image intentionally doesn't bake big proving key for CI
-          - test: prove_empty_program
-            zkvm: zisk
-          - test: prove_panic_guest
-            zkvm: zisk
-
+        zkvm: [sp1]
+        action: [execute, prove]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@nightly
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
       
       - name: Install C toolchain dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential clang libclang-dev
-      
-      - name: Pull ere images
-        run: |
-          for variant in "" "-${{ matrix.zkvm }}"; do
-            src="ghcr.io/eth-act/ere/ere-base${variant}:${ERE_TAG}"
-            dst="ere-base${variant}:${ERE_TAG}"
-            docker pull "$src"
-            docker tag "$src" "$dst"
-          done
 
       - name: Run benchmark
-        run: CI=1 RUST_LOG=info,sp1_core_executor=warn ZKVM=${{ matrix.zkvm }} cargo test --release -p integration-tests -- --test-threads=1 ${{ matrix.test }}
+        run: RUST_LOG=info cargo run -p ere-hosts --release --features ${{ matrix.zkvm }} -- --action ${{ matrix.action }} empty-program
+      
+      - name: Check zkevm-metrics folder
+        run: |
+          find ./zkevm-metrics
+          if [ ! -d "./zkevm-metrics" ]; then
+            echo "zkevm-metrics folder does not exist"
+            exit 1
+          fi
+          if [ ! -f "./zkevm-metrics/hardware.json" ]; then
+            echo "hardware.json file does not exist in zkevm-metrics folder"
+            exit 1
+          fi
+          zkvm_folder=$(find ./zkevm-metrics -type d -name "sp1-*" | head -n 1)
+          if [ -z "$zkvm_folder" ]; then
+            echo "No SP1 folder found in zkevm-metrics"
+            exit 1
+          fi
+          if [ ! -f "$zkvm_folder/empty_program.json" ]; then
+            echo "empty_program.json file does not exist in $zkvm_folder"
+            exit 1
+          fi

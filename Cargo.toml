@@ -4,8 +4,9 @@ members = [
     "crates/witness-generator",
     "crates/witness-generator-cli",
     "crates/ere-hosts",
+
     "ere-guests/libs",
-    "tests",
+
     "xtask",
 ]
 resolver = "2"
@@ -107,36 +108,33 @@ zkevm-metrics = { path = "crates/metrics" }
 benchmark-runner = { path = "crates/benchmark-runner" }
 guest-libs = { path = "ere-guests/libs" }
 
-zkvm-interface = { git = "https://github.com/eth-applied-research-group/ere", rev = "8fe61cad5b9cf67be4ce4cf91786d4ddd7c783f1", package = "zkvm-interface" }
-ere-dockerized = { git = "https://github.com/eth-applied-research-group/ere", rev = "8fe61cad5b9cf67be4ce4cf91786d4ddd7c783f1", package = "ere-dockerized" }
+zkvm-interface = { git = "https://github.com/eth-applied-research-group/ere", tag = "v0.0.10", package = "zkvm-interface" }
+ere-sp1 = { git = "https://github.com/eth-applied-research-group/ere", tag = "v0.0.10", package = "ere-sp1" }
+ere-risc0 = { git = "https://github.com/eth-applied-research-group/ere", tag = "v0.0.10", package = "ere-risc0" }
+ere-pico = { git = "https://github.com/eth-applied-research-group/ere", tag = "v0.0.10", package = "ere-pico" }
+ere-openvm = { git = "https://github.com/eth-applied-research-group/ere", tag = "v0.0.10", package = "ere-openvm" }
+ere-zisk = { git = "https://github.com/eth-applied-research-group/ere", tag = "v0.0.10", package = "ere-zisk" }
 
 # branch is kw/zkevm-benchmark-workload-repo
 # NOTE: We are using a branch of a branch that has not yet been merged into master.
-ef-tests = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
-reth-ethereum-primitives = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
-reth-stateless = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
-reth-rpc-api = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
-reth-primitives-traits = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
-reth-errors = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
-reth-trie-common = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
-reth-chainspec = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5555cdd2f783e30189946385cebb3dcf822cabe8" }
-
-ethrex-zkvm_interface = { git = "https://github.com/jsign/ethrex.git", rev = "d77ca445024800e981dab5ddcc69f4d55622d6c1", package = "zkvm_interface" }
-ethrex-common = { git = "https://github.com/jsign/ethrex.git", rev = "d77ca445024800e981dab5ddcc69f4d55622d6c1", default-features = false }
-ethrex-rlp = { git = "https://github.com/jsign/ethrex.git", rev = "d77ca445024800e981dab5ddcc69f4d55622d6c1", default-features = false }
-ethrex-trie = { git = "https://github.com/jsign/ethrex.git", rev = "d77ca445024800e981dab5ddcc69f4d55622d6c1", default-features = false }
+ef-tests = { git = "https://github.com/kevaundray/reth", rev = "e0a902c98d586f2a306245d5942712865bce6294" }
+reth-ethereum-primitives = { git = "https://github.com/kevaundray/reth", rev = "e0a902c98d586f2a306245d5942712865bce6294" }
+reth-stateless = { git = "https://github.com/kevaundray/reth", rev = "e0a902c98d586f2a306245d5942712865bce6294" }
+reth-rpc-api = { git = "https://github.com/kevaundray/reth", rev = "e0a902c98d586f2a306245d5942712865bce6294" }
+reth-primitives-traits = { git = "https://github.com/kevaundray/reth", rev = "e0a902c98d586f2a306245d5942712865bce6294" }
+reth-errors = { git = "https://github.com/kevaundray/reth", rev = "e0a902c98d586f2a306245d5942712865bce6294" }
+reth-trie-common = { git = "https://github.com/kevaundray/reth", rev = "e0a902c98d586f2a306245d5942712865bce6294" }
 
 
 # alloy
-alloy-eips = { version = "1.0.23" }
-alloy-rpc-types-eth = "1.0.23"
-alloy-consensus = { version = "1.0.23", default-features = false }
-alloy-primitives = { version = "1.3.0", default-features = false }
+alloy-eips = { version = "1.0.13" }
+alloy-rpc-types-eth = "1.0.12"
+alloy-consensus = { version = "1.0.18", default-features = false }
+alloy-primitives = { version = "1.2.0", default-features = false }
 alloy-hardforks = { version = "0.2.7", default-features = false }
 alloy-chains = { version = "0.2.5", default-features = false }
 alloy-rlp = { version = "0.3.10", default-features = false }
 alloy-trie = { version = "0.9.0", default-features = false }
-alloy-genesis = { version = "1.0.23", default-features = false }
 
 ethereum_ssz_derive = "0.9"
 ethereum_ssz = "0.9"
@@ -164,5 +162,3 @@ tokio = { version = "1.45.1" }
 tokio-util = "0.7.15"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-rkyv = "0.8.10"
-bytes = "1.10"

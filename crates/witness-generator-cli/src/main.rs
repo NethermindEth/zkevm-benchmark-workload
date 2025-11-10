@@ -164,10 +164,7 @@ async fn build_generator(source: SourceCommand) -> Result<Box<dyn WitnessGenerat
             }
 
             Ok(Box::new(
-                builder
-                    .build()
-                    .await
-                    .context("Failed to build RPC generator")?,
+                builder.build().context("Failed to build RPC generator")?,
             ))
         }
     }
