@@ -1,5 +1,18 @@
 [workspace]
 members = [
+
+    # Reth stateless executor
+    "stateless-executor/reth/airbender",
+    "stateless-executor/reth/io",
+    "stateless-executor/reth/guest",
+    "stateless-executor/reth/openvm",
+    "stateless-executor/reth/pico",
+    "stateless-executor/reth/risc0",
+    "stateless-executor/reth/sp1",
+    "stateless-executor/reth/zisk",
+
+
+
     # Reth stateless validator
     "stateless-validator/reth/guest",
     "stateless-validator/reth/airbender",

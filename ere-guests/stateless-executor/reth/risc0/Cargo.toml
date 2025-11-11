@@ -1,0 +1,29 @@
+[package]
+name = "reth-risc0-stateless-executor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reth-guest = { workspace = true, default-features = true }
+risc0-zkvm.workspace = true
+guest-libs.workspace = true
+
+reth-stateless.workspace = true
+reth-ethereum-primitives = { workspace = true, features = [
+    "serde",
+    "serde-bincode-compat",
+] }
+reth-primitives-traits = { workspace = true, features = [
+    "serde",
+    "serde-bincode-compat",
+] }
+
+revm = { workspace = true, features = ["std", "blst", "bn"] }
+
+alloy-primitives = { workspace = true, default-features = false, features = [
+    "map-foldhash",
+    "serde",
+    "tiny-keccak",
+] }
+
+k256.workspace = true
