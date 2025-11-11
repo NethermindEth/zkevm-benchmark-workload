@@ -214,4 +214,9 @@ openvm = { git = "https://github.com/openvm-org//openvm.git", tag = "v1.4.2" }
 openvm-algebra-guest = { git = "https://github.com/openvm-org//openvm.git", tag = "v1.4.2" }
 openvm-keccak256 = { git = "https://github.com/openvm-org//openvm.git", tag = "v1.4.2" }
 
+[patch."https://github.com/paradigmxyz/reth"]
+reth-stateless = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
+reth-errors = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
+reth-trie-common = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
+
 [patch.crates-io]
