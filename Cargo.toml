@@ -117,17 +117,17 @@ ere-zkvm-interface = { git = "https://github.com/eth-applied-research-group/ere"
 ere-dockerized = { git = "https://github.com/eth-applied-research-group/ere", rev = "7b8bb6adcdaae68b2b3c1c410b1d3c40721a82e8", package = "ere-dockerized" }
 ere-io-serde = { git = "https://github.com/eth-applied-research-group/ere", rev = "7b8bb6adcdaae68b2b3c1c410b1d3c40721a82e8", package = "ere-io-serde" }
 
-# branch is kw/zkevm-benchmark-workload-repo
+# branch is kw/zkevm
 # NOTE: We are using a branch of a branch that has not yet been merged into master.
-ef-tests = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de" }
-reth-ethereum-primitives = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de" }
-reth-stateless = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de" }
-reth-rpc-api = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de" }
-reth-primitives-traits = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de" }
-reth-errors = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de" }
-reth-trie-common = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de" }
-reth-chainspec = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de" }
-reth-evm-ethereum = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de" }
+ef-tests = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
+reth-ethereum-primitives = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
+reth-stateless = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
+reth-rpc-api = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
+reth-primitives-traits = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
+reth-errors = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
+reth-trie-common = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
+reth-chainspec = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
+reth-evm-ethereum = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
 
 
 ethrex-guest-program = { git = "https://github.com/lambdaclass/ethrex.git", rev = "cfb805c6c70df1f6172f1982c9ed8952b7399d28", package = "guest_program" }
