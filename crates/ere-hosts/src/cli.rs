@@ -3,7 +3,7 @@
 use std::{path::PathBuf, str::FromStr};
 
 use anyhow::Result;
-use benchmark_runner::{runner::Action, stateless_validator};
+use benchmark_runner::{guest_programs, runner::Action,stateless_executor, stateless_validator};
 use clap::{Parser, Subcommand, ValueEnum};
 use ere_dockerized::zkVMKind;
 use ere_zkvm_interface::ProverResourceType;
@@ -16,11 +16,11 @@ use ere_zkvm_interface::ProverResourceType;
 #[derive(Debug)]
 pub struct Cli {
     /// Resource type for proving
-    #[arg(short, long, value_enum, default_value = "cpu")]
+    #[arg(short, long, value_enum, default_value = "gpu")]
     pub resource: Resource,
 
     /// Action to perform
-    #[arg(short, long, value_enum, default_value = "execute")]
+    #[arg(short, long, value_enum, default_value = "prove")]
     pub action: BenchmarkAction,
 
     /// zkVM instances to benchmark
@@ -47,6 +47,15 @@ pub struct Cli {
 /// Subcommands for different guest programs
 #[derive(Subcommand, Clone, Debug)]
 pub enum GuestProgramCommand {
+    /// Ethereum Stateless Executor
+    StatelessExecutor {
+        /// Input folder for benchmark fixtures
+        #[arg(short, long, default_value = "zkevm-fixtures-input")]
+        input_folder: PathBuf,
+        /// Execution client to benchmark
+        #[arg(short, long)]
+        execution_client: ExecutionClient,
+    },
     /// Ethereum Stateless Validator
     StatelessValidator {
         /// Input folder for benchmark fixtures
@@ -95,12 +104,22 @@ pub enum ExecutionClient {
 
 impl ExecutionClient {
     /// Get the guest relative path for the execution client
-    pub fn guest_rel_path(&self) -> Result<PathBuf> {
-        let path = match self {
+    pub fn guest_rel_path(&self, guest_program: &str) -> Result<PathBuf> {
+        let validator_path = match self {
             Self::Reth => "stateless-validator/reth",
             Self::Ethrex => "stateless-validator/ethrex",
         };
-        Ok(PathBuf::from_str(path).unwrap())
+        let executor_path = match self {
+            Self::Reth => "stateless-executor/reth",
+            Self::Ethrex => "stateless-executor/ethrex",
+        };
+        let path = match guest_program {
+            "stateless-validator" => validator_path,
+            "stateless-executor" => executor_path,
+            "empty-program" => PathBuf::from("empty-program"),
+            "block-encoding-length" => PathBuf::from("block-encoding-length"),
+        };
+        Ok(PathBuf::from(path))
     }
 }
 
@@ -150,6 +169,15 @@ impl From<BlockEncodingFormat> for block_encoding_length_guest::guest::BlockEnco
 }
 
 impl From<ExecutionClient> for stateless_validator::ExecutionClient {
+    fn from(client: ExecutionClient) -> Self {
+        match client {
+            ExecutionClient::Reth => Self::Reth,
+            ExecutionClient::Ethrex => Self::Ethrex,
+        }
+    }
+}
+
+impl From<ExecutionClient> for stateless_executor::ExecutionClient {
     fn from(client: ExecutionClient) -> Self {
         match client {
             ExecutionClient::Reth => Self::Reth,
