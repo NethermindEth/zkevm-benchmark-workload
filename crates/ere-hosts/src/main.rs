@@ -35,6 +35,38 @@ fn main() -> Result<()> {
 
     let workspace_dir = workspace_root().join("ere-guests");
     match cli.guest_program {
+        GuestProgramCommand::StatelessExecutor {
+            input_folder,
+            execution_client,
+        } => {
+            info!(
+                "Running stateless-executor benchmark for input folder: {}",
+                input_folder.display()
+            );
+            let el = execution_client.into();
+            let guest_io =
+                stateless_executor::stateless_executor_inputs(input_folder.as_path(), el)?;
+            let guest_relative = execution_client
+                .guest_rel_path("stateless-executor")
+                .context("Failed to get guest relative path")?;
+            let apply_patches = matches!(execution_client, ExecutionClient::Reth);
+            let zkvms = get_zkvm_instances(
+                &cli.zkvms,
+                &workspace_dir,
+                &guest_relative,
+                resource,
+                apply_patches,
+            )?;
+            let config = RunConfig {
+                output_folder: cli.output_folder,
+                sub_folder: Some(el.as_ref().to_lowercase()),
+                action,
+                force_rerun: cli.force_rerun,
+            };
+            for zkvm in zkvms {
+                run_benchmark(&zkvm, &config, guest_io.clone())?;
+            }
+        }
         GuestProgramCommand::StatelessValidator {
             input_folder,
             execution_client,
@@ -47,7 +79,7 @@ fn main() -> Result<()> {
             let guest_io =
                 stateless_validator::stateless_validator_inputs(input_folder.as_path(), el)?;
             let guest_relative = execution_client
-                .guest_rel_path()
+                .guest_rel_path("stateless-validator")
                 .context("Failed to get guest relative path")?;
             let apply_patches = matches!(execution_client, ExecutionClient::Reth);
             let zkvms = get_zkvm_instances(
