@@ -6,7 +6,7 @@ use anyhow::{Context, Result};
 use benchmark_runner::{
     block_encoding_length_program, empty_program,
     runner::{Action, RunConfig, get_zkvm_instances, run_benchmark},
-    stateless_validator::{self},
+    stateless_executor, stateless_validator,
 };
 
 use clap::Parser;
@@ -37,15 +37,20 @@ fn main() -> Result<()> {
     match cli.guest_program {
         GuestProgramCommand::StatelessExecutor {
             input_folder,
+            input_file,
             execution_client,
         } => {
+            let input_display = input_file.as_ref().unwrap_or(&input_folder);
             info!(
-                "Running stateless-executor benchmark for input folder: {}",
-                input_folder.display()
+                "Running stateless-executor benchmark for input: {}",
+                input_display.display()
             );
             let el = execution_client.into();
-            let guest_io =
-                stateless_executor::stateless_executor_inputs(input_folder.as_path(), el)?;
+            let guest_io = stateless_executor::stateless_executor_inputs_from(
+                input_folder.as_path(),
+                input_file.as_deref(),
+                el,
+            )?;
             let guest_relative = execution_client
                 .guest_rel_path("stateless-executor")
                 .context("Failed to get guest relative path")?;
@@ -69,15 +74,20 @@ fn main() -> Result<()> {
         }
         GuestProgramCommand::StatelessValidator {
             input_folder,
+            input_file,
             execution_client,
         } => {
+            let input_display = input_file.as_ref().unwrap_or(&input_folder);
             info!(
-                "Running stateless-validator benchmark for input folder: {}",
-                input_folder.display()
+                "Running stateless-validator benchmark for input: {}",
+                input_display.display()
             );
             let el = execution_client.into();
-            let guest_io =
-                stateless_validator::stateless_validator_inputs(input_folder.as_path(), el)?;
+            let guest_io = stateless_validator::stateless_validator_inputs_from(
+                input_folder.as_path(),
+                input_file.as_deref(),
+                el,
+            )?;
             let guest_relative = execution_client
                 .guest_rel_path("stateless-validator")
                 .context("Failed to get guest relative path")?;

@@ -45,8 +45,20 @@ pub fn stateless_executor_inputs(
     input_folder: &Path,
     el: ExecutionClient,
 ) -> Result<Vec<GuestIO<BlockMetadata, ProgramOutputVerifier>>> {
+    stateless_executor_inputs_from(input_folder, None, el)
+}
+
+/// Prepares inputs from either a folder or a single file.
+pub fn stateless_executor_inputs_from(
+    input_folder: &Path,
+    input_file: Option<&Path>,
+    el: ExecutionClient,
+) -> Result<Vec<GuestIO<BlockMetadata, ProgramOutputVerifier>>> {
     let mut res = vec![];
-    let witnesses = read_benchmark_fixtures_folder(input_folder)?;
+    let witnesses = match input_file {
+        Some(file) => vec![read_benchmark_fixture_file(file)?],
+        None => read_benchmark_fixtures_folder(input_folder)?,
+    };
     for bw in &witnesses {
         let input = get_input_full_validation(bw, &el)?;
         let metadata = BlockMetadata {
@@ -61,6 +73,14 @@ pub fn stateless_executor_inputs(
         })
     }
     Ok(res)
+}
+
+/// Reads a single benchmark fixture file.
+fn read_benchmark_fixture_file(path: &Path) -> Result<StatelessExecutionFixture> {
+    let content = std::fs::read(path)
+        .with_context(|| format!("Failed to read file: {}", path.display()))?;
+    serde_json::from_slice(&content)
+        .with_context(|| format!("Failed to parse {}", path.display()))
 }
 
 /// Reads the benchmark fixtures folder and returns a list of block and witness pairs.
