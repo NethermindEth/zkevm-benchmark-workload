@@ -13,7 +13,14 @@ use witness_generator::StatelessValidationFixture;
 pub fn stateless_validator_inputs(
     input_folder: &Path,
 ) -> anyhow::Result<Vec<Box<dyn GuestFixture>>> {
-    read_benchmark_fixtures_folder(input_folder)?
+    stateless_validator_inputs_from_fixtures(read_benchmark_fixtures_folder(input_folder)?)
+}
+
+/// Prepares the inputs from pre-loaded fixtures.
+pub fn stateless_validator_inputs_from_fixtures(
+    fixtures: Vec<StatelessValidationFixture>,
+) -> anyhow::Result<Vec<Box<dyn GuestFixture>>> {
+    fixtures
         .into_iter()
         .map(|bw| {
             let input = get_input_full_validation(&bw)?;

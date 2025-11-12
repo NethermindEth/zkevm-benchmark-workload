@@ -50,8 +50,11 @@ pub enum GuestProgramCommand {
     /// Ethereum Stateless Executor
     StatelessExecutor {
         /// Input folder for benchmark fixtures
-        #[arg(short, long, default_value = "zkevm-fixtures-input")]
+        #[arg(short, long, default_value = "zkevm-fixtures-input", conflicts_with = "input_file")]
         input_folder: PathBuf,
+        /// Input file for a single benchmark fixture
+        #[arg(long)]
+        input_file: Option<PathBuf>,
         /// Execution client to benchmark
         #[arg(short, long)]
         execution_client: ExecutionClient,
@@ -59,8 +62,11 @@ pub enum GuestProgramCommand {
     /// Ethereum Stateless Validator
     StatelessValidator {
         /// Input folder for benchmark fixtures
-        #[arg(short, long, default_value = "zkevm-fixtures-input")]
+        #[arg(short, long, default_value = "zkevm-fixtures-input", conflicts_with = "input_file")]
         input_folder: PathBuf,
+        /// Input file for a single benchmark fixture
+        #[arg(long)]
+        input_file: Option<PathBuf>,
         /// Execution client to benchmark
         #[arg(short, long)]
         execution_client: ExecutionClient,
