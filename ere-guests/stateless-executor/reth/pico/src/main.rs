@@ -6,7 +6,7 @@ extern crate alloc;
 
 use kzg_rs::{Bytes32, Bytes48};
 use pico_sdk::io::{commit_bytes, read_vec};
-use reth_guest::{
+use reth_stateless_executor_guest::{
     guest::ethereum_guest,
     sdk::{ScopeMarker, SDK},
 };

@@ -138,7 +138,8 @@ zero_sized_map_values = "warn"
 
 [workspace.dependencies]
 guest-libs = { path = "libs", default-features = false }
-reth-guest = { path = "stateless-validator/reth/guest", default-features = false }
+reth-stateless-validator-guest = { path = "stateless-validator/reth/guest", default-features = false }
+reth-stateless-executor-guest = { path = "stateless-executor/reth/guest", default-features = false }
 reth-stateless-validator-io = { path = "stateless-validator/reth/io", default-features = false }
 reth-stateless-executor-io = { path = "stateless-executor/reth/io", default-features = false }
 block-encoding-length-io = { path = "block-encoding-length/io", default-features = false }

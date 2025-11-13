@@ -1,7 +1,7 @@
 //! OpenVM guest program
 
 use openvm::io::{read_vec, reveal_bytes32};
-use reth_guest::{
+use reth_stateless_validator_guest::{
     guest::ethereum_guest,
     sdk::{ScopeMarker, SDK},
 };

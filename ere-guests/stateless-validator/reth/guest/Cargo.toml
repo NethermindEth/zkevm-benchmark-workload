@@ -1,5 +1,5 @@
 [package]
-name = "reth-guest"
+name = "reth-stateless-validator-guest"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

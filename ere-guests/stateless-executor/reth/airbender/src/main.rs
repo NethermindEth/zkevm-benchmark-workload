@@ -11,7 +11,7 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use core::{array, iter::repeat_with};
-use reth_guest::{
+use reth_stateless_executor_guest::{
     guest::ethereum_guest,
     sdk::{SDK, ScopeMarker},
 };

@@ -2,7 +2,7 @@
 
 #![no_main]
 
-use reth_guest::{
+use reth_stateless_validator_guest::{
     guest::ethereum_guest,
     sdk::{SDK, ScopeMarker},
 };

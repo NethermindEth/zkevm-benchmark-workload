@@ -9,7 +9,7 @@ use k256::sha2::{Digest, Sha256};
 use reth_chainspec::ChainSpec;
 use reth_ethereum_primitives::Block as EthBlock;
 use reth_evm_ethereum::EthEvmConfig;
-use reth_guest_io::{Input, io_serde};
+use reth_stateless_executor_io::{Input, io_serde};
 use reth_primitives_traits::Block;
 use reth_stateless::{
     ExecutionWitness, Genesis, UncompressedPublicKey, stateless_execution_with_trie,
@@ -78,7 +78,7 @@ fn execute_block<S: SDK>(
     public_keys: Vec<UncompressedPublicKey>,
     evm_config: EthEvmConfig,
 ) -> Result<FixedBytes<32>, Box<dyn Error>> {
-    S::cycle_scope(ScopeMarker::Start, "validation");
+    S::cycle_scope(ScopeMarker::Start, "execution");
     let (block_hash, _) = stateless_execution_with_trie::<SparseState, _, _>(
         block,
         public_keys,
@@ -86,7 +86,7 @@ fn execute_block<S: SDK>(
         chain_spec,
         evm_config,
     )?;
-    S::cycle_scope(ScopeMarker::End, "validation");
+    S::cycle_scope(ScopeMarker::End, "execution");
 
     Ok(block_hash)
 }

@@ -2,7 +2,7 @@
 
 extern crate alloc;
 
-use reth_guest::{
+use reth_stateless_validator_guest::{
     guest::ethereum_guest,
     sdk::{ScopeMarker, SDK},
 };
