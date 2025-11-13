@@ -120,6 +120,7 @@ impl ExecutionClient {
             "stateless-executor" => executor_path,
             "empty-program" => "empty-program",
             "block-encoding-length" => "block-encoding-length",
+            _ => return Err(anyhow::anyhow!("Invalid guest program: {}", guest_program)),
         };
         Ok(PathBuf::from(path))
     }
