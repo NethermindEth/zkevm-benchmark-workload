@@ -162,13 +162,13 @@ openvm-ecc-guest = { git = "https://github.com/openvm-org/openvm.git", tag = "v1
 
 # branch is kw/zkevm-benchmark-workload-repo
 # NOTE: We are using a branch of a branch that has not yet been merged into master.
-reth-ethereum-primitives = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de", default-features = false }
-reth-primitives-traits = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de", default-features = false }
-reth-stateless = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de", default-features = false }
-reth-chainspec = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de", default-features = false }
-reth-evm-ethereum = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de", default-features = false }
-reth-errors = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de", default-features = false }
-reth-trie-common = { git = "https://github.com/kevaundray/reth", rev = "2f94b4b8739b7d7dd83d5ca3567d73d7059120de", default-features = false }
+reth-ethereum-primitives = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee", default-features = false }
+reth-primitives-traits = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee", default-features = false }
+reth-stateless = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee", default-features = false }
+reth-chainspec = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee", default-features = false }
+reth-evm-ethereum = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee", default-features = false }
+reth-errors = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee", default-features = false }
+reth-trie-common = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee", default-features = false }
 
 
 # alloy
