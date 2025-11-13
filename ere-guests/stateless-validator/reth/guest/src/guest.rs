@@ -9,7 +9,7 @@ use k256::sha2::{Digest, Sha256};
 use reth_chainspec::ChainSpec;
 use reth_ethereum_primitives::Block as EthBlock;
 use reth_evm_ethereum::EthEvmConfig;
-use reth_guest_io::{Input, io_serde};
+use reth_stateless_validator_io::{Input, io_serde};
 use reth_primitives_traits::Block;
 use reth_stateless::{
     ExecutionWitness, Genesis, UncompressedPublicKey, stateless_validation_with_trie,

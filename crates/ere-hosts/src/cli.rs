@@ -1,9 +1,9 @@
 //! CLI definitions for the zkVM benchmarker
 
-use std::{path::PathBuf, str::FromStr};
+use std::path::PathBuf;
 
 use anyhow::Result;
-use benchmark_runner::{guest_programs, runner::Action,stateless_executor, stateless_validator};
+use benchmark_runner::{runner::Action, stateless_executor, stateless_validator};
 use clap::{Parser, Subcommand, ValueEnum};
 use ere_dockerized::ErezkVM;
 use ere_zkvm_interface::ProverResourceType;

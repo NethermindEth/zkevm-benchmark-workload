@@ -1335,8 +1335,9 @@ dependencies = [
  "guest-libs",
  "guest_program",
  "rayon",
- "reth-guest-io",
  "reth-stateless",
+ "reth-stateless-executor-io",
+ "reth-stateless-validator-io",
  "rkyv",
  "serde",
  "serde_json",
@@ -6776,17 +6777,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "reth-guest-io"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "ere-io-serde",
- "guest-libs",
- "reth-stateless",
- "serde",
-]
-
-[[package]]
 name = "reth-libmdbx"
 version = "1.8.3"
 source = "git+https://github.com/WiseMrMusa/reth-k?rev=6d9dc8a42fcd7c3620365cda393d10d8955accee#6d9dc8a42fcd7c3620365cda393d10d8955accee"
@@ -7457,6 +7447,28 @@ dependencies = [
  "serde_with",
  "thiserror 2.0.17",
  "tracing",
+]
+
+[[package]]
+name = "reth-stateless-executor-io"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "ere-io-serde",
+ "guest-libs",
+ "reth-stateless",
+ "serde",
+]
+
+[[package]]
+name = "reth-stateless-validator-io"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "ere-io-serde",
+ "guest-libs",
+ "reth-stateless",
+ "serde",
 ]
 
 [[package]]

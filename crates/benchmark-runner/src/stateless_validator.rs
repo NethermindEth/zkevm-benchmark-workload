@@ -136,9 +136,9 @@ fn get_input_full_validation(
 ) -> Result<Vec<u8>> {
     let si = &bw.stateless_input;
     match el {
-        ExecutionClient::Reth => reth_guest_io::io_serde()
+        ExecutionClient::Reth => reth_stateless_validator_io::io_serde()
             .serialize(
-                &reth_guest_io::Input::new(si.clone()).context("Failed to create Reth input")?,
+                &reth_stateless_validator_io::Input::new(si.clone()).context("Failed to create Reth input")?,
             )
             .map_err(|e| anyhow::anyhow!("Reth serialization error: {e}")),
         ExecutionClient::Ethrex => {

@@ -8,7 +8,7 @@ license.workspace = true
 [dependencies]
 guest-libs.workspace = true
 sparsestate.workspace = true
-reth-guest-io.workspace = true
+reth-stateless-validator-io.workspace = true
 ere-io-serde.workspace = true
 
 # reth
