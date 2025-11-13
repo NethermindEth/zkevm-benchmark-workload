@@ -118,8 +118,8 @@ impl ExecutionClient {
         let path = match guest_program {
             "stateless-validator" => validator_path,
             "stateless-executor" => executor_path,
-            "empty-program" => PathBuf::from("empty-program"),
-            "block-encoding-length" => PathBuf::from("block-encoding-length"),
+            "empty-program" => "empty-program",
+            "block-encoding-length" => "block-encoding-length",
         };
         Ok(PathBuf::from(path))
     }
