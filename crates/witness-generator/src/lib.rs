@@ -249,3 +249,52 @@ impl Fixture for StatelessValidationFixture {
         self.stateless_input.block.number
     }
 }
+/// A stateless validation fixture containing block data and witness information.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StatelessExecutionFixture {
+    /// Name of the blockchain test case (e.g., "`ModExpAttackContract`").
+    pub name: String,
+    /// The stateless input for the block validation.
+    pub stateless_input: StatelessInput,
+    /// Whether the stateless block validation is successful.
+    pub success: bool,
+}
+
+impl StatelessExecutionFixture {
+    /// Serializes fixtures to a pretty-printed JSON string.
+    pub fn to_json(items: &[Self]) -> Result<String> {
+        Ok(serde_json::to_string_pretty(items)?)
+    }
+
+    /// Deserializes fixtures from a JSON string.
+    pub fn from_json(json: &str) -> Result<Vec<Self>> {
+        Ok(serde_json::from_str(json)?)
+    }
+
+    /// Serializes fixtures to JSON and writes to the specified file path.
+    pub fn to_path<P: AsRef<Path>>(path: P, items: &[Self]) -> Result<()> {
+        let json = Self::to_json(items)?;
+        fs::write(path, json)?;
+        Ok(())
+    }
+
+    /// Reads and deserializes fixtures from the specified file path.
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Vec<Self>> {
+        let path = path.as_ref();
+        let contents = fs::read_to_string(path).map_err(|e| WGError::ReadFixtureError {
+            path: path.display().to_string(),
+            source: e,
+        })?;
+        Self::from_json(&contents)
+    }
+}
+
+impl Fixture for StatelessExecutionFixture {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn block_number(&self) -> u64 {
+        self.stateless_input.block.number
+    }
+}
