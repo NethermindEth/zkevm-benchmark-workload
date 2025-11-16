@@ -13,3 +13,4 @@ zkevm-metrics*
 .envrc
 
 ere-guests/**/Cargo.lock
+node_modules

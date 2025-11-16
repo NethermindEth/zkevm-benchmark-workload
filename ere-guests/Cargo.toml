@@ -215,6 +215,9 @@ codegen-units = 1
 [profile.release.package.reth-airbender-stateless-validator]
 opt-level = "s"
 
+[profile.release.package.reth-airbender-stateless-executor]
+opt-level = "s"
+
 [patch."https://github.com/paradigmxyz/reth"]
 reth-stateless = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
 reth-errors = { git = "https://github.com/WiseMrMusa/reth-k", rev = "6d9dc8a42fcd7c3620365cda393d10d8955accee" }
