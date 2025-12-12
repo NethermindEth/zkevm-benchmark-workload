@@ -13,3 +13,7 @@ zkevm-dump
 
 # private envrc file
 .envrc
+
+ere-guests/**/Cargo.lock
+__pycache__
+node_modules
