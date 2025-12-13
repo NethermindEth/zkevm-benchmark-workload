@@ -19,6 +19,8 @@ guest-libs = { workspace = true, default-features = true }
 block-encoding-length-guest.workspace = true
 reth-guest.workspace = true
 ethrex-guest.workspace = true
+reth-executor-guest.workspace = true
+ethrex-executor-guest.workspace = true
 
 alloy-rlp.workspace = true
 alloy-eips.workspace = true

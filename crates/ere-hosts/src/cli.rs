@@ -1,9 +1,9 @@
 //! CLI definitions for the zkVM benchmarker
 
-use std::{path::PathBuf, str::FromStr};
+use std::path::PathBuf;
 
 use anyhow::Result;
-use benchmark_runner::{guest_programs, runner::Action,stateless_executor, stateless_validator};
+use benchmark_runner::{runner::Action, stateless_executor, stateless_validator};
 use clap::{Parser, Subcommand, ValueEnum};
 use ere_dockerized::zkVMKind;
 use ere_zkvm_interface::ProverResourceType;
@@ -120,12 +120,13 @@ impl ExecutionClient {
             Self::Ethrex => "stateless-executor/ethrex",
         };
         let path = match guest_program {
-            "stateless-validator" => validator_path,
-            "stateless-executor" => executor_path,
+            "stateless-validator" => PathBuf::from(validator_path),
+            "stateless-executor" => PathBuf::from(executor_path),
             "empty-program" => PathBuf::from("empty-program"),
             "block-encoding-length" => PathBuf::from("block-encoding-length"),
+            _ => return Err(anyhow::anyhow!("Unknown guest program: {}", guest_program)),
         };
-        Ok(PathBuf::from(path))
+        Ok(path)
     }
 }
 
