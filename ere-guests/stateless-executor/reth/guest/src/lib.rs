@@ -1,4 +1,4 @@
-//! Stateless Reth executor guest
+//! Stateless Reth guest
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
