@@ -235,17 +235,17 @@ openvm-algebra-guest = { git = "https://github.com/openvm-org//openvm.git", tag 
 openvm-keccak256 = { git = "https://github.com/openvm-org//openvm.git", tag = "v1.4.2" }
 
 [patch."https://github.com/paradigmxyz/reth"]
-reth-stateless = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5edeb905537a06ee3acba032f278ab8670d533aa" }
-reth-errors = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5edeb905537a06ee3acba032f278ab8670d533aa" }
-reth-trie-common = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5edeb905537a06ee3acba032f278ab8670d533aa" }
-reth-revm = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5edeb905537a06ee3acba032f278ab8670d533aa" }
-reth-trie-sparse = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5edeb905537a06ee3acba032f278ab8670d533aa" }
-reth-ethereum-primitives = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5edeb905537a06ee3acba032f278ab8670d533aa" }
-reth-primitives-traits = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5edeb905537a06ee3acba032f278ab8670d533aa" }
-reth-chainspec = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5edeb905537a06ee3acba032f278ab8670d533aa" }
-reth-evm-ethereum = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5edeb905537a06ee3acba032f278ab8670d533aa" }
-reth-consensus = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5edeb905537a06ee3acba032f278ab8670d533aa" }
-reth-ethereum-consensus = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5edeb905537a06ee3acba032f278ab8670d533aa" }
-reth-evm = { git = "https://github.com/WiseMrMusa/reth-k", rev = "5edeb905537a06ee3acba032f278ab8670d533aa" }
+reth-stateless = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
+reth-errors = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
+reth-trie-common = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
+reth-revm = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
+reth-trie-sparse = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
+reth-ethereum-primitives = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
+reth-primitives-traits = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
+reth-chainspec = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
+reth-evm-ethereum = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
+reth-consensus = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
+reth-ethereum-consensus = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
+reth-evm = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
 
 [patch.crates-io]

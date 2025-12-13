@@ -5630,7 +5630,7 @@ dependencies = [
 [[package]]
 name = "reth-chainspec"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-chains",
  "alloy-consensus",
@@ -5650,7 +5650,7 @@ dependencies = [
 [[package]]
 name = "reth-codecs"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -5668,7 +5668,7 @@ dependencies = [
 [[package]]
 name = "reth-codecs-derive"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5678,7 +5678,7 @@ dependencies = [
 [[package]]
 name = "reth-consensus"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-consensus",
  "alloy-primitives",
@@ -5691,7 +5691,7 @@ dependencies = [
 [[package]]
 name = "reth-consensus-common"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -5703,7 +5703,7 @@ dependencies = [
 [[package]]
 name = "reth-db-models"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-eips",
  "alloy-primitives",
@@ -5713,7 +5713,7 @@ dependencies = [
 [[package]]
 name = "reth-errors"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "reth-consensus",
  "reth-execution-errors",
@@ -5724,7 +5724,7 @@ dependencies = [
 [[package]]
 name = "reth-ethereum-consensus"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -5740,7 +5740,7 @@ dependencies = [
 [[package]]
 name = "reth-ethereum-forks"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-eip2124",
  "alloy-hardforks",
@@ -5752,7 +5752,7 @@ dependencies = [
 [[package]]
 name = "reth-ethereum-primitives"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -5769,7 +5769,7 @@ dependencies = [
 [[package]]
 name = "reth-evm"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -5790,7 +5790,7 @@ dependencies = [
 [[package]]
 name = "reth-evm-ethereum"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -5810,7 +5810,7 @@ dependencies = [
 [[package]]
 name = "reth-execution-errors"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-evm",
  "alloy-primitives",
@@ -5823,7 +5823,7 @@ dependencies = [
 [[package]]
 name = "reth-execution-types"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -5881,7 +5881,7 @@ dependencies = [
 [[package]]
 name = "reth-network-peers"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
@@ -5965,7 +5965,7 @@ dependencies = [
 [[package]]
 name = "reth-primitives-traits"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -5992,7 +5992,7 @@ dependencies = [
 [[package]]
 name = "reth-prune-types"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-primitives",
  "derive_more 2.0.1",
@@ -6003,7 +6003,7 @@ dependencies = [
 [[package]]
 name = "reth-revm"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-primitives",
  "reth-primitives-traits",
@@ -6083,7 +6083,7 @@ dependencies = [
 [[package]]
 name = "reth-stages-types"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-primitives",
  "reth-trie-common",
@@ -6092,7 +6092,7 @@ dependencies = [
 [[package]]
 name = "reth-stateless"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-consensus",
  "alloy-genesis",
@@ -6120,7 +6120,7 @@ dependencies = [
 [[package]]
 name = "reth-static-file-types"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-primitives",
  "derive_more 2.0.1",
@@ -6131,7 +6131,7 @@ dependencies = [
 [[package]]
 name = "reth-storage-api"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -6153,7 +6153,7 @@ dependencies = [
 [[package]]
 name = "reth-storage-errors"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-eips",
  "alloy-primitives",
@@ -6169,7 +6169,7 @@ dependencies = [
 [[package]]
 name = "reth-trie-common"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-consensus",
  "alloy-primitives",
@@ -6185,7 +6185,7 @@ dependencies = [
 [[package]]
 name = "reth-trie-sparse"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
@@ -6235,7 +6235,7 @@ dependencies = [
 [[package]]
 name = "reth-zstd-compressors"
 version = "1.9.3"
-source = "git+https://github.com/WiseMrMusa/reth-k?rev=5edeb905537a06ee3acba032f278ab8670d533aa#5edeb905537a06ee3acba032f278ab8670d533aa"
+source = "git+https://github.com/WiseMrMusa/reth?rev=65f85601ef1dbc1dbaf6edce43937eebe122542c#65f85601ef1dbc1dbaf6edce43937eebe122542c"
 dependencies = [
  "zstd",
 ]
