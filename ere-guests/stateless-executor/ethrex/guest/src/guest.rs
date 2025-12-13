@@ -94,4 +94,3 @@ impl Guest for EthrexStatelessExecutorGuest {
         }
     }
 }
-

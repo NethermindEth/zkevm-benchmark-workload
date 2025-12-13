@@ -6,8 +6,8 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
-ziskos.workspace = true
-reth-guest = { workspace = true, default-features = true }
+ere-platform-zisk.workspace = true
+reth-executor-guest = { workspace = true, default-features = true }
 guest-libs.workspace = true
 
 reth-stateless.workspace = true

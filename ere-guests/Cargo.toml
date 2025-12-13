@@ -3,7 +3,6 @@ members = [
 
     # Reth stateless executor
     "stateless-executor/reth/airbender",
-    "stateless-executor/reth/io",
     "stateless-executor/reth/guest",
     "stateless-executor/reth/openvm",
     "stateless-executor/reth/pico",
@@ -143,6 +142,7 @@ zero_sized_map_values = "warn"
 # local dependencies
 guest-libs = { path = "libs", default-features = false }
 reth-guest = { path = "stateless-validator/reth/guest", default-features = false }
+reth-executor-guest = { path = "stateless-executor/reth/guest", default-features = false }
 ethrex-guest = { path = "stateless-validator/ethrex/guest", default-features = false }
 ethrex-executor-guest = { path = "stateless-executor/ethrex/guest", default-features = false }
 block-encoding-length-guest = { path = "block-encoding-length/guest", default-features = false }
@@ -219,6 +219,9 @@ panic = "abort"
 codegen-units = 1
 
 [profile.release.package.reth-airbender-stateless-validator]
+opt-level = "s"
+
+[profile.release.package.reth-airbender-stateless-executor]
 opt-level = "s"
 
 [patch."https://github.com/openvm-org/openvm.git"]

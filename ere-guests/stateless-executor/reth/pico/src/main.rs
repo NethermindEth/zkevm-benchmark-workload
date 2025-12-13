@@ -2,40 +2,12 @@
 
 #![no_main]
 
-extern crate alloc;
-
+use ere_platform_pico::{PicoPlatform, pico_sdk};
 use kzg_rs::{Bytes32, Bytes48};
-use pico_sdk::io::{commit_bytes, read_vec};
-use reth_guest::{
-    guest::ethereum_guest,
-    sdk::{ScopeMarker, SDK},
-};
-use revm::precompile::{interface::install_crypto, Crypto, PrecompileError};
+use reth_executor_guest::guest::{Guest, RethStatelessExecutorGuest};
+use revm::precompile::{Crypto, PrecompileError, interface::install_crypto};
 
 pico_sdk::entrypoint!(main);
-
-struct PicoSDK;
-
-impl SDK for PicoSDK {
-    fn read_input() -> Vec<u8> {
-        read_vec()
-    }
-
-    fn commit_output(output: [u8; 32]) {
-        commit_bytes(&output);
-    }
-
-    fn cycle_scope(scope: ScopeMarker, message: &str) {
-        match scope {
-            ScopeMarker::Start => {
-                println!("cycle-tracker-report-start: {message}")
-            }
-            ScopeMarker::End => {
-                println!("cycle-tracker-report-end: {message}")
-            }
-        }
-    }
-}
 
 #[derive(Debug)]
 struct CryptoProvider;
@@ -90,5 +62,5 @@ fn as_bytes48(bytes: &[u8]) -> &Bytes48 {
 /// Entry point.
 pub fn main() {
     install_crypto(CryptoProvider);
-    ethereum_guest::<PicoSDK>();
+    RethStatelessExecutorGuest::run_output_sha256::<PicoPlatform>();
 }

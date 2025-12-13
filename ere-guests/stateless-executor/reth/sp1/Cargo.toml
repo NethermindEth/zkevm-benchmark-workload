@@ -1,5 +1,5 @@
 [package]
-name = "reth-sp1-stateless-validator"
+name = "reth-sp1-stateless-executor"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
@@ -7,9 +7,10 @@ license = "MIT OR Apache-2.0"
 
 
 [dependencies]
-sp1-zkvm.workspace = true
-reth-guest = { workspace = true, default-features = true }
+ere-platform-sp1.workspace = true
+reth-executor-guest = { workspace = true, default-features = true }
 guest-libs.workspace = true
+sha2.workspace = true
 
 reth-stateless.workspace = true
 reth-ethereum-primitives = { workspace = true, features = [
