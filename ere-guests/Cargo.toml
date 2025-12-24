@@ -8,6 +8,7 @@ members = [
     "stateless-executor/reth/pico",
     "stateless-executor/reth/risc0",
     "stateless-executor/reth/sp1",
+    "stateless-executor/reth/sp1-cluster",
     "stateless-executor/reth/zisk",
 
 
@@ -19,6 +20,7 @@ members = [
     "stateless-validator/reth/pico",
     "stateless-validator/reth/risc0",
     "stateless-validator/reth/sp1",
+    "stateless-validator/reth/sp1-cluster",
     "stateless-validator/reth/zisk",
 
     # Ethrex stateless validator
@@ -234,6 +236,16 @@ openvm = { git = "https://github.com/openvm-org//openvm.git", tag = "v1.4.2" }
 openvm-algebra-guest = { git = "https://github.com/openvm-org//openvm.git", tag = "v1.4.2" }
 openvm-keccak256 = { git = "https://github.com/openvm-org//openvm.git", tag = "v1.4.2" }
 
+[patch."https://github.com/eth-applied-research-group/ere"]
+ere-io = { path = "../../ere/crates/io" }
+ere-platform-trait = { path = "../../ere/crates/zkvm-interface/platform" }
+ere-platform-airbender = { path = "../../ere/crates/zkvm/airbender/platform" }
+ere-platform-openvm = { path = "../../ere/crates/zkvm/openvm/platform" }
+ere-platform-pico = { path = "../../ere/crates/zkvm/pico/platform" }
+ere-platform-risc0 = { path = "../../ere/crates/zkvm/risc0/platform" }
+ere-platform-sp1 = { path = "../../ere/crates/zkvm/sp1/platform" }
+ere-platform-zisk = { path = "../../ere/crates/zkvm/zisk/platform" }
+
 [patch."https://github.com/paradigmxyz/reth"]
 reth-stateless = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
 reth-errors = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
@@ -249,7 +261,12 @@ reth-ethereum-consensus = { git = "https://github.com/WiseMrMusa/reth", rev = "6
 reth-evm = { git = "https://github.com/WiseMrMusa/reth", rev = "65f85601ef1dbc1dbaf6edce43937eebe122542c" }
 
 [patch.crates-io]
-sha2 = { git = "https://github.com/0xPolygonHermez/zisk-patch-hashes.git", tag = "patch-sha2-0.10.9-zisk-0.13.0" }
-sha3 = { git = "https://github.com/0xPolygonHermez/zisk-patch-hashes.git", tag = "patch-sha3-0.10.8-zisk-0.13.0" }
-k256 = { git = "https://github.com/0xPolygonHermez/zisk-patch-elliptic-curves.git", tag = "patch-k256-0.13.4-zisk-0.13.0" }
-bn = { git = "https://github.com/0xPolygonHermez/zisk-patch-bn.git", tag = "patch-0.6.0-zisk-0.13.0", package = "substrate-bn" }
+sha2-v0-10-9 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", package = "sha2", tag = "patch-sha2-0.10.9-sp1-4.0.0" }
+sha3-v0-10-8 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", package = "sha3", tag = "patch-sha3-0.10.8-sp1-4.0.0" }
+crypto-bigint = { git = "https://github.com/sp1-patches/RustCrypto-bigint", tag = "patch-0.5.5-sp1-4.0.0" }
+tiny-keccak = { git = "https://github.com/sp1-patches/tiny-keccak", tag = "patch-2.0.2-sp1-4.0.0" }
+curve25519-dalek = { git = "https://github.com/sp1-patches/curve25519-dalek", tag = "patch-4.1.3-sp1-5.0.0" }
+k256 = { git = "https://github.com/sp1-patches/elliptic-curves", tag = "patch-k256-13.4-sp1-5.0.0" }
+p256 = { git = "https://github.com/sp1-patches/elliptic-curves", tag = "patch-p256-13.2-sp1-5.0.0" }
+substrate-bn = { git = "https://github.com/sp1-patches/bn", tag = "patch-0.6.0-sp1-5.0.0" }
+ecdsa = { git = "https://github.com/sp1-patches/signatures", tag = "patch-16.9-sp1-4.1.0" }

@@ -26,7 +26,7 @@ fn main() -> Result<()> {
 
     let cli = Cli::parse();
 
-    let resource: ProverResourceType = cli.resource.into();
+    let resource: ProverResourceType = cli.prover_resource_type();
     let action: Action = cli.action.into();
     info!(
         "Running benchmarks with resource={:?} and action={:?}",

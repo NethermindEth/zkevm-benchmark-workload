@@ -7,8 +7,8 @@ license = "MIT OR Apache-2.0"
 
 # SP1 Cluster uses the same zkvm runtime as SP1
 [dependencies]
-sp1-zkvm.workspace = true
-reth-stateless-validator-guest = { workspace = true, default-features = true }
+ere-platform-sp1.workspace = true
+reth-guest = { workspace = true, default-features = true }
 guest-libs.workspace = true
 
 reth-stateless.workspace = true

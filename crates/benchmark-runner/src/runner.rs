@@ -239,10 +239,17 @@ pub fn get_zkvm_instances(
 
 /// Patches the precompiles for a specific zkvm
 fn run_cargo_patch_command(zkvm_name: &str, workspace_path: &Path) -> Result<()> {
-    info!("Running cargo {}...", zkvm_name);
+    // sp1-cluster uses the same SP1 SDK, so use "sp1" for patching
+    let cargo_subcommand = if zkvm_name == "sp1-cluster" {
+        "sp1"
+    } else {
+        zkvm_name
+    };
+
+    info!("Running cargo {}...", cargo_subcommand);
 
     let output = Command::new("cargo")
-        .arg(zkvm_name)
+        .arg(cargo_subcommand)
         .arg("--manifest-folder")
         .arg(workspace_path)
         .output()?;
@@ -253,16 +260,16 @@ fn run_cargo_patch_command(zkvm_name: &str, workspace_path: &Path) -> Result<()>
 
         error!(
             "cargo {} failed with exit code: {:?}",
-            zkvm_name,
+            cargo_subcommand,
             output.status.code()
         );
         error!("stdout: {}", stdout);
         error!("stderr: {}", stderr);
 
-        bail!("cargo {zkvm_name} command failed");
+        bail!("cargo {cargo_subcommand} command failed");
     }
 
-    info!("cargo {zkvm_name} completed successfully");
+    info!("cargo {cargo_subcommand} completed successfully");
     Ok(())
 }
 

@@ -6,7 +6,7 @@ use anyhow::Result;
 use benchmark_runner::{runner::Action, stateless_executor, stateless_validator};
 use clap::{Parser, Subcommand, ValueEnum};
 use ere_dockerized::zkVMKind;
-use ere_zkvm_interface::ProverResourceType;
+use ere_zkvm_interface::{ClusterProverConfig, ProverResourceType};
 
 /// Command line interface for the zkVM benchmarker
 #[derive(Parser)]
@@ -42,6 +42,18 @@ pub struct Cli {
     /// Output folder for dumping input files used in benchmarks
     #[arg(long)]
     pub dump_inputs: Option<PathBuf>,
+
+    /// Cluster endpoint URL (for --resource cluster)
+    #[arg(long, env = "SP1_CLUSTER_ENDPOINT")]
+    pub cluster_endpoint: Option<String>,
+
+    /// Cluster Redis URL for artifact storage (for --resource cluster)
+    #[arg(long, env = "SP1_CLUSTER_REDIS_URL")]
+    pub cluster_redis_url: Option<String>,
+
+    /// Number of GPUs to use for cluster proving (for --resource cluster)
+    #[arg(long, env = "SP1_CLUSTER_NUM_GPUS")]
+    pub cluster_num_gpus: Option<u32>,
 }
 
 /// Subcommands for different guest programs
@@ -137,6 +149,8 @@ pub enum Resource {
     Cpu,
     /// GPU resource
     Gpu,
+    /// Multi-GPU cluster (e.g., SP1 Cluster)
+    Cluster,
 }
 
 /// Benchmark actions
@@ -148,11 +162,18 @@ pub enum BenchmarkAction {
     Prove,
 }
 
-impl From<Resource> for ProverResourceType {
-    fn from(resource: Resource) -> Self {
-        match resource {
-            Resource::Cpu => Self::Cpu,
-            Resource::Gpu => Self::Gpu,
+impl Cli {
+    /// Convert CLI resource options to ProverResourceType
+    pub fn prover_resource_type(&self) -> ProverResourceType {
+        match self.resource {
+            Resource::Cpu => ProverResourceType::Cpu,
+            Resource::Gpu => ProverResourceType::Gpu,
+            Resource::Cluster => ProverResourceType::Cluster(ClusterProverConfig {
+                endpoint: self.cluster_endpoint.clone().unwrap_or_default(),
+                api_key: None,
+                num_gpus: self.cluster_num_gpus,
+                redis_url: self.cluster_redis_url.clone(),
+            }),
         }
     }
 }
