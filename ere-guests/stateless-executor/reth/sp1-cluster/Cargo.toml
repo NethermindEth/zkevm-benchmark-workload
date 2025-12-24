@@ -1,0 +1,33 @@
+[package]
+name = "reth-sp1-cluster-stateless-executor"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+
+# SP1 Cluster uses the same zkvm runtime as SP1
+[dependencies]
+sp1-zkvm.workspace = true
+reth-stateless-executor-guest = { workspace = true, default-features = true }
+guest-libs.workspace = true
+
+reth-stateless.workspace = true
+reth-ethereum-primitives = { workspace = true, features = [
+    "serde",
+    "serde-bincode-compat",
+] }
+reth-primitives-traits = { workspace = true, features = [
+    "serde",
+    "serde-bincode-compat",
+] }
+
+revm = { workspace = true, default-features = false, features = ["bn"] }
+alloy-primitives = { workspace = true, default-features = false, features = [
+    "map-foldhash",
+    "serde",
+    "sha3-keccak",
+] }
+k256.workspace = true
+
+tracing-subscriber = "*"
+tracing = "*"
