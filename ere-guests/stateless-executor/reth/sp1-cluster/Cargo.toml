@@ -10,6 +10,7 @@ license = "MIT OR Apache-2.0"
 ere-platform-sp1.workspace = true
 reth-executor-guest = { workspace = true, default-features = true }
 guest-libs.workspace = true
+sha2.workspace = true
 
 reth-stateless.workspace = true
 reth-ethereum-primitives = { workspace = true, features = [

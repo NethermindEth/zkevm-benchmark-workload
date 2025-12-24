@@ -5,45 +5,16 @@
 
 #![no_main]
 
-extern crate alloc;
-
-use reth_stateless_validator_guest::{
-    guest::ethereum_guest,
-    sdk::{SDK, ScopeMarker},
-};
-use sp1_zkvm::io::read_vec;
+use ere_platform_sp1::{SP1Platform, sp1_zkvm};
+use reth_guest::guest::{Guest, RethStatelessValidatorGuest};
 use tracing_subscriber::fmt;
 
 sp1_zkvm::entrypoint!(main);
 
-#[allow(missing_debug_implementations)]
-struct SP1ClusterSDK;
-
-impl SDK for SP1ClusterSDK {
-    fn read_input() -> Vec<u8> {
-        read_vec()
-    }
-
-    fn commit_output(output: [u8; 32]) {
-        sp1_zkvm::io::commit(&output);
-    }
-
-    fn cycle_scope(scope: ScopeMarker, message: &str) {
-        match scope {
-            ScopeMarker::Start => {
-                println!("cycle-tracker-report-start: {message}")
-            }
-            ScopeMarker::End => {
-                println!("cycle-tracker-report-end: {message}")
-            }
-        }
-    }
-}
-
 /// Entry point.
 pub fn main() {
     init_tracing_just_like_println();
-    ethereum_guest::<SP1ClusterSDK>();
+    RethStatelessValidatorGuest::run_output_sha256::<SP1Platform>();
 }
 
 /// Initializes a basic `tracing` subscriber that mimics `println!` behavior.

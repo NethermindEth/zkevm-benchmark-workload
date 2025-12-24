@@ -6057,6 +6057,7 @@ dependencies = [
  "reth-primitives-traits",
  "reth-stateless",
  "revm 33.1.0",
+ "sha2",
  "tracing",
  "tracing-subscriber 0.2.25",
 ]
@@ -6074,6 +6075,7 @@ dependencies = [
  "reth-primitives-traits",
  "reth-stateless",
  "revm 33.1.0",
+ "sha2",
  "tracing",
  "tracing-subscriber 0.2.25",
 ]
