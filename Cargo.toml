@@ -157,6 +157,7 @@ ethereum_ssz_derive = "0.9"
 ethereum_ssz = "0.9"
 
 revm-bytecode = { version = "7.1.1", default-features = false }
+revm-inspectors = { version = "0.33" }
 
 k256 = { version = "0.13", default-features = false }
 

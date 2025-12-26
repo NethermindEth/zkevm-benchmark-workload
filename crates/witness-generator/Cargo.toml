@@ -13,11 +13,16 @@ reth-ethereum-primitives = { workspace = true, features = [
     "serde",
     "serde-bincode-compat",
 ] }
+reth-evm.workspace = true
+reth-evm-ethereum.workspace = true
+reth-revm.workspace = true
 ef-tests.workspace = true
+revm-inspectors.workspace = true
 
 alloy-genesis.workspace = true
 alloy-eips = { workspace = true }
 alloy-rpc-types-eth.workspace = true
+alloy-primitives = { workspace = true, features = ["std"] }
 
 walkdir.workspace = true
 rayon.workspace = true

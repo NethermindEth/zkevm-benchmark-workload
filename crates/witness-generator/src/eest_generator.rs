@@ -8,10 +8,13 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
-use tracing::error;
+use tracing::{error, info};
 use walkdir::{DirEntry, WalkDir};
 
-use crate::{Fixture, FixtureGenerator, Result, StatelessValidationFixture, WGError};
+use crate::{
+    Fixture, FixtureGenerator, Result, StatelessValidationFixture, WGError,
+    tracing::{ExecutionTrace, TraceConfig, generate_trace},
+};
 use reth_stateless::StatelessInput;
 
 /// Witness generator that produces `BlockAndWitness` fixtures for execution-spec-test fixtures.
@@ -21,6 +24,7 @@ pub struct EESTFixtureGeneratorBuilder {
     tag: Option<String>,
     include: Option<Vec<String>>,
     exclude: Option<Vec<String>>,
+    trace_enabled: bool,
 }
 
 impl EESTFixtureGeneratorBuilder {
@@ -58,6 +62,15 @@ impl EESTFixtureGeneratorBuilder {
         self
     }
 
+    /// Enables EIP-3155 instruction tracing for generated fixtures.
+    ///
+    /// When enabled, each fixture will have a companion `.trace.json` file
+    /// containing detailed execution traces of all opcodes and precompile calls.
+    pub const fn with_tracing(mut self, enabled: bool) -> Self {
+        self.trace_enabled = enabled;
+        self
+    }
+
     /// Constructs the generator, downloading EEST fixtures if no local path was specified.
     pub fn build(self) -> Result<EESTFixtureGenerator> {
         let input_folder = self.input_folder;
@@ -89,6 +102,7 @@ impl EESTFixtureGeneratorBuilder {
             filter_include: include,
             filter_exclude: exclude,
             delete_eest_fixtures: delete_eest_folder,
+            trace_enabled: self.trace_enabled,
         })
     }
 }
@@ -100,6 +114,7 @@ pub struct EESTFixtureGenerator {
     filter_include: Vec<String>,
     filter_exclude: Vec<String>,
     delete_eest_fixtures: bool,
+    trace_enabled: bool,
 }
 
 impl Drop for EESTFixtureGenerator {
@@ -165,9 +180,94 @@ impl FixtureGenerator for EESTFixtureGenerator {
 
         Ok(bws)
     }
+
+    /// Generates fixtures and writes each to a JSON file in the specified directory.
+    ///
+    /// If tracing is enabled, also generates `.trace.json` files alongside each fixture.
+    async fn generate_to_path(&self, path: &Path) -> Result<usize> {
+        let suite_path = self.eest_fixtures.join("fixtures/blockchain_tests");
+
+        if !suite_path.exists() {
+            return Err(WGError::TestSuitePathNotFound(
+                suite_path.display().to_string(),
+            ));
+        }
+
+        let test_file_paths = find_all_files_with_extension(&suite_path, ".json");
+        let mut tests: Vec<(String, BlockchainTest)> = Vec::new();
+        for test_path in test_file_paths {
+            let test_case =
+                BlockchainTestCase::load(&test_path).map_err(|e| WGError::TestCaseLoadError {
+                    path: test_path.display().to_string(),
+                    source: Box::new(e) as Box<dyn std::error::Error + Send + Sync>,
+                })?;
+
+            let file_tests: Vec<(String, BlockchainTest)> = test_case
+                .tests
+                .into_iter()
+                .map(|(name, case)| {
+                    (
+                        name.split('/').next_back().unwrap_or(&name).to_string(),
+                        case,
+                    )
+                })
+                .filter(|(name, _)| {
+                    !self
+                        .filter_exclude
+                        .iter()
+                        .any(|filter| name.contains(filter))
+                })
+                .filter(|(name, _)| self.filter_include.iter().all(|f| name.contains(f)))
+                .collect();
+            tests.extend(file_tests);
+        }
+
+        // Generate fixtures and optionally traces
+        let trace_enabled = self.trace_enabled;
+        let results: Vec<_> = tests
+            .par_iter()
+            .map(|(name, case)| gen_fixture_with_optional_trace(name, case, trace_enabled))
+            .collect::<Result<Vec<_>>>()?;
+
+        // Write fixtures and traces to disk
+        for (fixture, trace) in &results {
+            // Write fixture
+            let output_path = path.join(format!("{}.json", fixture.name));
+            let json = serde_json::to_string_pretty(fixture)
+                .map_err(|e| WGError::FixtureSerializationError {
+                    name: fixture.name.clone(),
+                    source: e,
+                })?;
+            std::fs::write(&output_path, json).map_err(|e| WGError::FixtureWriteError {
+                path: output_path.display().to_string(),
+                source: e,
+            })?;
+
+            // Write trace if present
+            if let Some(trace) = trace {
+                if let Err(e) = trace.write_to_path(path) {
+                    error!("Failed to write trace for {}: {}", fixture.name, e);
+                } else {
+                    info!("Generated trace for {}", fixture.name);
+                }
+            }
+        }
+
+        Ok(results.len())
+    }
 }
 
 fn gen_fixture(name: &str, case: &BlockchainTest) -> Result<Box<dyn Fixture>> {
+    let (fixture, _trace) = gen_fixture_with_optional_trace(name, case, false)?;
+    Ok(Box::new(fixture))
+}
+
+/// Generates a fixture and optionally an execution trace.
+fn gen_fixture_with_optional_trace(
+    name: &str,
+    case: &BlockchainTest,
+    trace_enabled: bool,
+) -> Result<(StatelessValidationFixture, Option<ExecutionTrace>)> {
     let spec: ChainSpec = case.network.into();
     let chain_config = create_chain_config(
         Some(Chain::mainnet()),
@@ -193,17 +293,27 @@ fn gen_fixture(name: &str, case: &BlockchainTest) -> Result<Box<dyn Fixture>> {
         .expect_exception
         .is_none();
 
-    let res: Box<dyn Fixture> = Box::new(StatelessValidationFixture {
-        name: name.to_owned(),
-        stateless_input: StatelessInput {
-            block,
-            witness,
-            chain_config,
-        },
-        success,
-    });
+    let stateless_input = StatelessInput {
+        block,
+        witness,
+        chain_config,
+    };
 
-    Ok(res)
+    let fixture = StatelessValidationFixture {
+        name: name.to_owned(),
+        stateless_input: stateless_input.clone(),
+        success,
+    };
+
+    // Generate trace if enabled
+    let trace = if trace_enabled {
+        let trace_config = TraceConfig::minimal();
+        Some(generate_trace(&stateless_input, name, &trace_config)?)
+    } else {
+        None
+    };
+
+    Ok((fixture, trace))
 }
 
 fn find_all_files_with_extension(path: &Path, extension: &str) -> Vec<PathBuf> {

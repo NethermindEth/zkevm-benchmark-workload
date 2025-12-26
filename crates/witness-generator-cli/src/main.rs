@@ -23,6 +23,12 @@ struct Cli {
     #[arg(short, long, default_value = "zkevm-fixtures-input")]
     output_folder: PathBuf,
 
+    /// Generate EIP-3155 instruction traces alongside fixtures.
+    /// Each fixture will have a companion .trace.json file containing
+    /// detailed execution traces of all opcodes and precompile calls.
+    #[arg(long, default_value_t = false)]
+    trace: bool,
+
     /// Source of blocks and witnesses
     #[command(subcommand)]
     source: SourceCommand,
@@ -85,8 +91,12 @@ async fn main() -> Result<()> {
             .with_context(|| format!("Failed to create output folder: {:?}", cli.output_folder))?;
     }
 
+    if cli.trace {
+        info!("Tracing enabled - will generate .trace.json files");
+    }
+
     info!("Generating fixtures...");
-    let count = build_generator(cli.source)
+    let count = build_generator(cli.source, cli.trace)
         .await?
         .generate_to_path(&cli.output_folder)
         .await
@@ -97,7 +107,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn build_generator(source: SourceCommand) -> Result<Box<dyn FixtureGenerator>> {
+async fn build_generator(source: SourceCommand, trace_enabled: bool) -> Result<Box<dyn FixtureGenerator>> {
     match source {
         SourceCommand::Tests {
             tag,
@@ -105,7 +115,8 @@ async fn build_generator(source: SourceCommand) -> Result<Box<dyn FixtureGenerat
             exclude,
             eest_fixtures_path,
         } => {
-            let mut builder = EESTFixtureGeneratorBuilder::default();
+            let mut builder = EESTFixtureGeneratorBuilder::default()
+                .with_tracing(trace_enabled);
 
             if let Some(tag) = tag {
                 builder = builder.with_tag(tag);
@@ -131,7 +142,8 @@ async fn build_generator(source: SourceCommand) -> Result<Box<dyn FixtureGenerat
             rpc_header,
             follow: listen,
         } => {
-            let mut builder = RpcBlocksAndWitnessesBuilder::new(rpc_url);
+            let mut builder = RpcBlocksAndWitnessesBuilder::new(rpc_url)
+                .with_tracing(trace_enabled);
 
             if let Some(rpc_header) = rpc_header {
                 let headers = RpcFlatHeaderKeyValues::new(rpc_header)

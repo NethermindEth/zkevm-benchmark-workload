@@ -8,6 +8,12 @@
 //! Core types: [`StatelessValidationFixture`] (block + witness), [`FixtureGenerator`].
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
+// These crates are used in the tracing module for EVM execution (currently placeholder)
+#[allow(unused_imports)]
+use reth_evm as _;
+#[allow(unused_imports)]
+use reth_revm as _;
+
 use std::{fs, path::Path};
 
 use async_trait::async_trait;
@@ -17,6 +23,7 @@ use thiserror::Error;
 
 pub mod eest_generator;
 pub mod rpc_generator;
+pub mod tracing;
 
 /// Error types for witness generation operations.
 #[derive(Debug, Error)]

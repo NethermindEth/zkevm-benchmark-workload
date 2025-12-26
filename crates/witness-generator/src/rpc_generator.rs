@@ -1,6 +1,9 @@
 //! Generate block and witnesses from an RPC endpoint
 
-use crate::{Fixture, FixtureGenerator, Result, StatelessValidationFixture, WGError};
+use crate::{
+    Fixture, FixtureGenerator, Result, StatelessValidationFixture, WGError,
+    tracing::{TraceConfig, generate_trace},
+};
 use alloy_eips::BlockNumberOrTag;
 use alloy_genesis::ChainConfig;
 use alloy_rpc_types_eth::{Block, Header, Receipt, Transaction, TransactionRequest};
@@ -25,6 +28,7 @@ pub struct RpcBlocksAndWitnessesBuilder {
     last_n_blocks: Option<usize>,
     block: Option<u64>,
     stop: Option<CancellationToken>,
+    trace_enabled: bool,
 }
 
 impl RpcBlocksAndWitnessesBuilder {
@@ -75,6 +79,15 @@ impl RpcBlocksAndWitnessesBuilder {
         self
     }
 
+    /// Enables EIP-3155 instruction tracing for generated fixtures.
+    ///
+    /// When enabled, each fixture will have a companion `.trace.json` file
+    /// containing detailed execution traces of all opcodes and precompile calls.
+    pub const fn with_tracing(mut self, enabled: bool) -> Self {
+        self.trace_enabled = enabled;
+        self
+    }
+
     /// Builds the configured `RpcBlocksAndWitnesses`.
     pub async fn build(self) -> Result<RpcFixtureGenerator> {
         let client = HttpClientBuilder::default()
@@ -106,6 +119,7 @@ impl RpcBlocksAndWitnessesBuilder {
             last_n_blocks: self.last_n_blocks,
             block: self.block,
             stop: self.stop,
+            trace_enabled: self.trace_enabled,
         })
     }
 }
@@ -118,6 +132,7 @@ pub struct RpcFixtureGenerator {
     last_n_blocks: Option<usize>,
     block: Option<u64>,
     stop: Option<CancellationToken>,
+    trace_enabled: bool,
 }
 
 #[async_trait]
@@ -396,6 +411,7 @@ impl RpcFixtureGenerator {
     /// Saves a collection of `BlockAndWitness` objects to JSON files in the specified directory.
     ///
     /// Each fixture is written to a separate JSON file named after the fixture's name.
+    /// If tracing is enabled, also generates `.trace.json` files alongside each fixture.
     ///
     /// # Arguments
     /// * `bws` - The slice of `BlockAndWitness` objects to save
@@ -415,11 +431,31 @@ impl RpcFixtureGenerator {
                     source: e,
                 }
             })?;
-            std::fs::write(&output_path, buf).map_err(|e| WGError::FixtureWriteError {
+            std::fs::write(&output_path, &buf).map_err(|e| WGError::FixtureWriteError {
                 path: output_path.display().to_string(),
                 source: e,
             })?;
             info!("Saved block and witness to: {}", output_path.display());
+
+            // Generate trace if enabled
+            if self.trace_enabled {
+                // Parse the fixture to get the stateless input
+                if let Ok(fixture) = serde_json::from_slice::<StatelessValidationFixture>(&buf) {
+                    let trace_config = TraceConfig::minimal();
+                    match generate_trace(&fixture.stateless_input, bw.name(), &trace_config) {
+                        Ok(trace) => {
+                            if let Err(e) = trace.write_to_path(path) {
+                                error!("Failed to write trace for {}: {}", bw.name(), e);
+                            } else {
+                                info!("Generated trace for {}", bw.name());
+                            }
+                        }
+                        Err(e) => {
+                            error!("Failed to generate trace for {}: {}", bw.name(), e);
+                        }
+                    }
+                }
+            }
         }
         Ok(())
     }
