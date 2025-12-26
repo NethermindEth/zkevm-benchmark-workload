@@ -4,7 +4,7 @@
 
 use anyhow::{Context, Result, anyhow};
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -28,6 +28,11 @@ struct Cli {
     /// detailed execution traces of all opcodes and precompile calls.
     #[arg(long, default_value_t = false)]
     trace: bool,
+
+    /// Output folder for trace files (only used when --trace is enabled).
+    /// Defaults to a 'traces' subdirectory inside the output folder.
+    #[arg(long)]
+    trace_output: Option<PathBuf>,
 
     /// Source of blocks and witnesses
     #[command(subcommand)]
@@ -91,12 +96,21 @@ async fn main() -> Result<()> {
             .with_context(|| format!("Failed to create output folder: {:?}", cli.output_folder))?;
     }
 
-    if cli.trace {
-        info!("Tracing enabled - will generate .trace.json files");
-    }
+    // Determine trace output path
+    let trace_output = if cli.trace {
+        let trace_path = cli.trace_output.unwrap_or_else(|| cli.output_folder.join("traces"));
+        info!("Tracing enabled - will generate .trace.json files in {:?}", trace_path);
+        if !trace_path.exists() {
+            std::fs::create_dir_all(&trace_path)
+                .with_context(|| format!("Failed to create trace output folder: {:?}", trace_path))?;
+        }
+        Some(trace_path)
+    } else {
+        None
+    };
 
     info!("Generating fixtures...");
-    let count = build_generator(cli.source, cli.trace)
+    let count = build_generator(cli.source, trace_output.as_deref())
         .await?
         .generate_to_path(&cli.output_folder)
         .await
@@ -107,7 +121,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn build_generator(source: SourceCommand, trace_enabled: bool) -> Result<Box<dyn FixtureGenerator>> {
+async fn build_generator(source: SourceCommand, trace_output: Option<&Path>) -> Result<Box<dyn FixtureGenerator>> {
     match source {
         SourceCommand::Tests {
             tag,
@@ -116,7 +130,7 @@ async fn build_generator(source: SourceCommand, trace_enabled: bool) -> Result<B
             eest_fixtures_path,
         } => {
             let mut builder = EESTFixtureGeneratorBuilder::default()
-                .with_tracing(trace_enabled);
+                .with_trace_output(trace_output.map(PathBuf::from));
 
             if let Some(tag) = tag {
                 builder = builder.with_tag(tag);
@@ -143,7 +157,7 @@ async fn build_generator(source: SourceCommand, trace_enabled: bool) -> Result<B
             follow: listen,
         } => {
             let mut builder = RpcBlocksAndWitnessesBuilder::new(rpc_url)
-                .with_tracing(trace_enabled);
+                .with_trace_output(trace_output.map(PathBuf::from));
 
             if let Some(rpc_header) = rpc_header {
                 let headers = RpcFlatHeaderKeyValues::new(rpc_header)

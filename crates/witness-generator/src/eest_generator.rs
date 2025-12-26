@@ -24,7 +24,7 @@ pub struct EESTFixtureGeneratorBuilder {
     tag: Option<String>,
     include: Option<Vec<String>>,
     exclude: Option<Vec<String>>,
-    trace_enabled: bool,
+    trace_output: Option<PathBuf>,
 }
 
 impl EESTFixtureGeneratorBuilder {
@@ -62,12 +62,13 @@ impl EESTFixtureGeneratorBuilder {
         self
     }
 
-    /// Enables EIP-3155 instruction tracing for generated fixtures.
+    /// Sets the output directory for EIP-3155 instruction traces.
     ///
-    /// When enabled, each fixture will have a companion `.trace.json` file
-    /// containing detailed execution traces of all opcodes and precompile calls.
-    pub const fn with_tracing(mut self, enabled: bool) -> Self {
-        self.trace_enabled = enabled;
+    /// When set, each fixture will have a companion `.trace.json` file
+    /// in this directory containing detailed execution traces of all opcodes
+    /// and precompile calls.
+    pub fn with_trace_output(mut self, path: Option<PathBuf>) -> Self {
+        self.trace_output = path;
         self
     }
 
@@ -102,7 +103,7 @@ impl EESTFixtureGeneratorBuilder {
             filter_include: include,
             filter_exclude: exclude,
             delete_eest_fixtures: delete_eest_folder,
-            trace_enabled: self.trace_enabled,
+            trace_output: self.trace_output,
         })
     }
 }
@@ -114,7 +115,7 @@ pub struct EESTFixtureGenerator {
     filter_include: Vec<String>,
     filter_exclude: Vec<String>,
     delete_eest_fixtures: bool,
-    trace_enabled: bool,
+    trace_output: Option<PathBuf>,
 }
 
 impl Drop for EESTFixtureGenerator {
@@ -183,7 +184,7 @@ impl FixtureGenerator for EESTFixtureGenerator {
 
     /// Generates fixtures and writes each to a JSON file in the specified directory.
     ///
-    /// If tracing is enabled, also generates `.trace.json` files alongside each fixture.
+    /// If trace output is configured, also generates `.trace.json` files in that directory.
     async fn generate_to_path(&self, path: &Path) -> Result<usize> {
         let suite_path = self.eest_fixtures.join("fixtures/blockchain_tests");
 
@@ -223,7 +224,7 @@ impl FixtureGenerator for EESTFixtureGenerator {
         }
 
         // Generate fixtures and optionally traces
-        let trace_enabled = self.trace_enabled;
+        let trace_enabled = self.trace_output.is_some();
         let results: Vec<_> = tests
             .par_iter()
             .map(|(name, case)| gen_fixture_with_optional_trace(name, case, trace_enabled))
@@ -245,10 +246,12 @@ impl FixtureGenerator for EESTFixtureGenerator {
 
             // Write trace if present
             if let Some(trace) = trace {
-                if let Err(e) = trace.write_to_path(path) {
-                    error!("Failed to write trace for {}: {}", fixture.name, e);
-                } else {
-                    info!("Generated trace for {}", fixture.name);
+                if let Some(ref trace_path) = self.trace_output {
+                    if let Err(e) = trace.write_to_path(trace_path) {
+                        error!("Failed to write trace for {}: {}", fixture.name, e);
+                    } else {
+                        info!("Generated trace for {}", fixture.name);
+                    }
                 }
             }
         }

@@ -17,7 +17,7 @@ use reth_chainspec::{Chain, HOLESKY, HOODI, NamedChain, SEPOLIA, mainnet_chain_c
 use reth_ethereum_primitives::TransactionSigned;
 use reth_rpc_api::{DebugApiClient, EthApiClient};
 use reth_stateless::StatelessInput;
-use std::{path::Path, str::FromStr};
+use std::{path::{Path, PathBuf}, str::FromStr};
 use tokio_util::sync::CancellationToken;
 
 /// Builder for configuring an RPC client that fetches blocks and witnesses.
@@ -28,7 +28,7 @@ pub struct RpcBlocksAndWitnessesBuilder {
     last_n_blocks: Option<usize>,
     block: Option<u64>,
     stop: Option<CancellationToken>,
-    trace_enabled: bool,
+    trace_output: Option<PathBuf>,
 }
 
 impl RpcBlocksAndWitnessesBuilder {
@@ -79,12 +79,13 @@ impl RpcBlocksAndWitnessesBuilder {
         self
     }
 
-    /// Enables EIP-3155 instruction tracing for generated fixtures.
+    /// Sets the output directory for EIP-3155 instruction traces.
     ///
-    /// When enabled, each fixture will have a companion `.trace.json` file
-    /// containing detailed execution traces of all opcodes and precompile calls.
-    pub const fn with_tracing(mut self, enabled: bool) -> Self {
-        self.trace_enabled = enabled;
+    /// When set, each fixture will have a companion `.trace.json` file
+    /// in this directory containing detailed execution traces of all opcodes
+    /// and precompile calls.
+    pub fn with_trace_output(mut self, path: Option<PathBuf>) -> Self {
+        self.trace_output = path;
         self
     }
 
@@ -119,7 +120,7 @@ impl RpcBlocksAndWitnessesBuilder {
             last_n_blocks: self.last_n_blocks,
             block: self.block,
             stop: self.stop,
-            trace_enabled: self.trace_enabled,
+            trace_output: self.trace_output,
         })
     }
 }
@@ -132,7 +133,7 @@ pub struct RpcFixtureGenerator {
     last_n_blocks: Option<usize>,
     block: Option<u64>,
     stop: Option<CancellationToken>,
-    trace_enabled: bool,
+    trace_output: Option<PathBuf>,
 }
 
 #[async_trait]
@@ -437,14 +438,14 @@ impl RpcFixtureGenerator {
             })?;
             info!("Saved block and witness to: {}", output_path.display());
 
-            // Generate trace if enabled
-            if self.trace_enabled {
+            // Generate trace if trace output path is configured
+            if let Some(ref trace_path) = self.trace_output {
                 // Parse the fixture to get the stateless input
                 if let Ok(fixture) = serde_json::from_slice::<StatelessValidationFixture>(&buf) {
                     let trace_config = TraceConfig::minimal();
                     match generate_trace(&fixture.stateless_input, bw.name(), &trace_config) {
                         Ok(trace) => {
-                            if let Err(e) = trace.write_to_path(path) {
+                            if let Err(e) = trace.write_to_path(trace_path) {
                                 error!("Failed to write trace for {}: {}", bw.name(), e);
                             } else {
                                 info!("Generated trace for {}", bw.name());
