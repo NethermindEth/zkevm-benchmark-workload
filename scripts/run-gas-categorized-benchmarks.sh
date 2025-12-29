@@ -56,6 +56,11 @@
 
 set -euo pipefail
 
+# SP1 Network proving environment variables
+# Set default NETWORK_RPC_URL if not already set
+export NETWORK_RPC_URL="${NETWORK_RPC_URL:-http://127.0.0.1:50051/}"
+# NETWORK_PRIVATE_KEY is optional - if set, it will be used for authenticated proving
+
 # Default values
 DRY_RUN=false
 FORCE_RERUN=false
