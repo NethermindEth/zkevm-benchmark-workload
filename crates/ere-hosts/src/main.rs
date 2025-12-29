@@ -27,14 +27,14 @@ fn main() -> Result<()> {
 
     let cli = Cli::parse();
 
-    // validate that cluster proving is only used with sp1
-    if matches!(cli.resource, Resource::Cluster) {
-        if cli.zkvms.iter().any(|z| *z != zkVMKind::SP1) {
-            bail!("Cluster proving is only supported with SP1 zkVMs");
+    // Validate that network proving is only used with SP1
+    if matches!(cli.resource, Resource::Network) {
+        if cli.zkvms.iter().any(|z| *z != zkVMKind::Sp1) {
+            bail!("Network proving is only supported for SP1. Use --zkvms sp1");
         }
     }
 
-    let resource: ProverResourceType = cli.resource.into();
+    let resource: ProverResourceType = cli.resource.clone().into();
     let action: Action = cli.action.into();
     info!(
         "Running benchmarks with resource={:?} and action={:?}",
