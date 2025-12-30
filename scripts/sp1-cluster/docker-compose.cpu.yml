@@ -1,0 +1,27 @@
+version: "3.8"
+
+# CPU Worker override - use with: docker compose -f docker-compose.yml -f docker-compose.cpu.yml up
+services:
+  sp1-cpu-worker:
+    build:
+      context: ${SP1_CLUSTER_PATH:-./sp1-cluster}
+      dockerfile: Dockerfile
+      target: cpu-node
+    environment:
+      COORDINATOR_URL: http://sp1-coordinator:50051
+      REDIS_URL: redis://redis:6379
+      RUST_LOG: ${RUST_LOG:-info}
+      WORKER_TYPE: cpu
+      # CPU worker thread configuration
+      RAYON_NUM_THREADS: ${CPU_THREADS:-0}
+    depends_on:
+      - sp1-coordinator
+      - redis
+    networks:
+      - sp1-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${CPU_WORKER_MEMORY:-16G}
+

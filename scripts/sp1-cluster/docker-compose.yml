@@ -1,0 +1,99 @@
+version: "3.8"
+
+services:
+  # PostgreSQL database for API state management
+  postgres:
+    image: postgres:15-alpine
+    container_name: sp1-cluster-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sp1}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sp1password}
+      POSTGRES_DB: ${POSTGRES_DB:-sp1_cluster}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sp1} -d ${POSTGRES_DB:-sp1_cluster}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sp1-network
+    restart: unless-stopped
+
+  # Redis for artifact storage
+  redis:
+    image: redis:7-alpine
+    container_name: sp1-cluster-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sp1-network
+    restart: unless-stopped
+
+  # SP1 API Server - REST API for prove requests
+  sp1-api:
+    build:
+      context: ${SP1_CLUSTER_PATH:-./sp1-cluster}
+      dockerfile: Dockerfile
+      target: api
+    container_name: sp1-cluster-api
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-sp1}:${POSTGRES_PASSWORD:-sp1password}@postgres:5432/${POSTGRES_DB:-sp1_cluster}
+      REDIS_URL: redis://redis:6379
+      API_HOST: 0.0.0.0
+      API_PORT: 8080
+      RUST_LOG: ${RUST_LOG:-info}
+      COORDINATOR_URL: http://sp1-coordinator:50051
+    ports:
+      - "${API_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sp1-network
+    restart: unless-stopped
+
+  # SP1 Coordinator - Task distribution and worker coordination
+  sp1-coordinator:
+    build:
+      context: ${SP1_CLUSTER_PATH:-./sp1-cluster}
+      dockerfile: Dockerfile
+      target: coordinator
+    container_name: sp1-cluster-coordinator
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-sp1}:${POSTGRES_PASSWORD:-sp1password}@postgres:5432/${POSTGRES_DB:-sp1_cluster}
+      REDIS_URL: redis://redis:6379
+      COORDINATOR_HOST: 0.0.0.0
+      COORDINATOR_PORT: 50051
+      RUST_LOG: ${RUST_LOG:-info}
+    ports:
+      - "${COORDINATOR_PORT:-50051}:50051"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sp1-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  sp1-network:
+    driver: bridge
+

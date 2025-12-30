@@ -1,0 +1,32 @@
+version: "3.8"
+
+# GPU Worker override - use with: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up
+services:
+  sp1-gpu-worker:
+    build:
+      context: ${SP1_CLUSTER_PATH:-./sp1-cluster}
+      dockerfile: Dockerfile
+      target: gpu-node
+    environment:
+      COORDINATOR_URL: http://sp1-coordinator:50051
+      REDIS_URL: redis://redis:6379
+      RUST_LOG: ${RUST_LOG:-info}
+      WORKER_TYPE: gpu
+      # GPU-specific settings
+      CUDA_VISIBLE_DEVICES: ${CUDA_VISIBLE_DEVICES:-all}
+    depends_on:
+      - sp1-coordinator
+      - redis
+    networks:
+      - sp1-network
+    restart: unless-stopped
+    # NVIDIA GPU runtime configuration
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
