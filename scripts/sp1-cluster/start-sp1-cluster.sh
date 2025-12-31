@@ -8,7 +8,7 @@
 # Options:
 #   --gpu-nodes N    Number of GPU worker nodes (default: 1)
 #                    Use 0 for CPU-only mode
-#   --build          Force rebuild of Docker images
+#   --build          Force re-pull of Docker images
 #   --detach, -d     Run in detached mode
 #   --help, -h       Show this help message
 #
@@ -64,7 +64,7 @@ Usage:
 Options:
   --gpu-nodes N    Number of GPU worker nodes (default: 1)
                    Use 0 for CPU-only mode
-  --build          Force rebuild of Docker images
+  --build          Force re-pull of Docker images
   --detach, -d     Run in detached mode
   --help, -h       Show this help message
 
@@ -74,9 +74,12 @@ Examples:
   $0 --gpu-nodes 0          # CPU-only mode
   $0 --gpu-nodes 4 -d       # 4 GPU workers, detached
 
+Images:
+  Uses pre-built images from ghcr.io/succinctlabs/sp1-cluster
+
 API Endpoint:
   Once running, the proving API will be available at:
-  http://localhost:8080/api/v1/prove
+  http://localhost:8080
 
 EOF
     exit 0
@@ -124,9 +127,6 @@ else
 fi
 
 # Configuration
-SP1_CLUSTER_REPO="${SP1_CLUSTER_REPO:-https://github.com/succinctlabs/sp1-cluster.git}"
-SP1_CLUSTER_BRANCH="${SP1_CLUSTER_BRANCH:-main}"
-SP1_CLUSTER_PATH="${SP1_CLUSTER_PATH:-./sp1-cluster}"
 API_PORT="${API_PORT:-8080}"
 
 # Check prerequisites
@@ -156,47 +156,21 @@ check_prerequisites() {
     log_success "Prerequisites check passed"
 }
 
-# Clone or update sp1-cluster repository
-setup_sp1_cluster_repo() {
-    log_info "Setting up sp1-cluster repository..."
+# Pull Docker images
+pull_images() {
+    log_info "Pulling Docker images..."
     
-    if [[ -d "$SP1_CLUSTER_PATH" ]]; then
-        log_info "sp1-cluster repository already exists at $SP1_CLUSTER_PATH"
-        
-        # Update to latest
-        pushd "$SP1_CLUSTER_PATH" > /dev/null
-        git fetch origin
-        git checkout "$SP1_CLUSTER_BRANCH"
-        git pull origin "$SP1_CLUSTER_BRANCH" || log_warn "Could not pull latest changes"
-        popd > /dev/null
-    else
-        log_info "Cloning sp1-cluster from $SP1_CLUSTER_REPO"
-        git clone --branch "$SP1_CLUSTER_BRANCH" "$SP1_CLUSTER_REPO" "$SP1_CLUSTER_PATH"
-    fi
+    # Pull base images
+    docker compose -f docker-compose.yml pull
     
-    log_success "sp1-cluster repository ready"
-}
-
-# Build Docker images
-build_images() {
-    log_info "Building Docker images..."
-    
-    local build_args=""
-    if [[ "$FORCE_BUILD" == true ]]; then
-        build_args="--build"
-    fi
-    
-    # Build base services
-    docker compose -f docker-compose.yml build $build_args
-    
-    # Build worker images based on mode
+    # Pull worker images based on mode
     if [[ "$GPU_NODES" -gt 0 ]]; then
-        docker compose -f docker-compose.yml -f docker-compose.gpu.yml build $build_args
+        docker compose -f docker-compose.yml -f docker-compose.gpu.yml pull
     else
-        docker compose -f docker-compose.yml -f docker-compose.cpu.yml build $build_args
+        docker compose -f docker-compose.yml -f docker-compose.cpu.yml pull
     fi
     
-    log_success "Docker images built"
+    log_success "Docker images pulled"
 }
 
 # Start the cluster
@@ -253,8 +227,9 @@ print_info() {
     echo -e "${GREEN}SP1 Cluster is running!${NC}"
     echo "========================================"
     echo ""
-    echo "API Endpoint:    http://localhost:${API_PORT}"
-    echo "Prove Endpoint:  http://localhost:${API_PORT}/api/v1/prove"
+    echo "HTTP API:        http://localhost:${API_PORT}"
+    echo "gRPC API:        http://localhost:${API_GRPC_PORT:-50051}"
+    echo "Coordinator:     http://localhost:${COORDINATOR_PORT:-50052}"
     echo ""
     if [[ "$GPU_NODES" -gt 0 ]]; then
         echo "Worker Mode:     GPU ($GPU_NODES worker(s))"
@@ -263,7 +238,7 @@ print_info() {
     fi
     echo ""
     echo "Useful commands:"
-    echo "  View logs:     docker compose logs -f"
+    echo "  View logs:     cd $(pwd) && docker compose logs -f"
     echo "  Stop cluster:  ./stop-sp1-cluster.sh"
     echo ""
 }
@@ -277,10 +252,10 @@ main() {
     echo ""
     
     check_prerequisites
-    setup_sp1_cluster_repo
     
+    # Pull images if not already available or if force build requested
     if [[ "$FORCE_BUILD" == true ]] || ! docker images | grep -q "sp1-cluster"; then
-        build_images
+        pull_images
     fi
     
     start_cluster
