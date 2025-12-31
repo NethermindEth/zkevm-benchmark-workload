@@ -1,19 +1,19 @@
-version: "3.8"
-
 # GPU Worker override - use with: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up
 services:
   sp1-gpu-worker:
-    build:
-      context: ${SP1_CLUSTER_PATH:-./sp1-cluster}
-      dockerfile: Dockerfile
-      target: gpu-node
+    image: ${SP1_CLUSTER_GPU_IMAGE:-ghcr.io/succinctlabs/sp1-cluster:node-gpu-v1.0.4}
+    command: ["/node"]
     environment:
-      COORDINATOR_URL: http://sp1-coordinator:50051
-      REDIS_URL: redis://redis:6379
-      RUST_LOG: ${RUST_LOG:-info}
-      WORKER_TYPE: gpu
+      NODE_COORDINATOR_RPC: http://sp1-coordinator:50052
+      WORKER_MAX_WEIGHT_OVERRIDE: ${GPU_WORKER_MAX_WEIGHT:-24}
+      NODE_ARTIFACT_STORE: redis
+      NODE_REDIS_NODES: redis://:${REDIS_PASSWORD:-}@redis:6379/0
+      WORKER_TYPE: GPU
+      RUST_LOG: ${RUST_LOG:-info,moongate_core=off}
       # GPU-specific settings
       CUDA_VISIBLE_DEVICES: ${CUDA_VISIBLE_DEVICES:-all}
+    volumes:
+      - ${HOME}/.sp1/circuits:/root/.sp1/circuits
     depends_on:
       - sp1-coordinator
       - redis
@@ -24,7 +24,12 @@ services:
     runtime: nvidia
     deploy:
       resources:
+        limits:
+          cpus: '32'
+          memory: ${GPU_WORKER_MEMORY:-24G}
         reservations:
+          cpus: '8'
+          memory: ${GPU_WORKER_MEMORY:-24G}
           devices:
             - driver: nvidia
               count: 1
