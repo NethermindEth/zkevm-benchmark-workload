@@ -98,44 +98,38 @@ done
 stop_services() {
     log_info "Stopping SP1 Cluster services..."
     
-    # Stop with all possible compose files to ensure everything is stopped
-    docker compose \
-        -f docker-compose.yml \
-        -f docker-compose.gpu.yml \
-        -f docker-compose.cpu.yml \
-        down 2>/dev/null || true
+    # Build down command with appropriate flags
+    local down_flags=""
+    
+    if [[ "$REMOVE_VOLUMES" == true ]]; then
+        down_flags="$down_flags -v"
+        log_info "Will remove volumes"
+    fi
+    
+    if [[ "$REMOVE_IMAGES" == true ]]; then
+        down_flags="$down_flags --rmi all"
+        log_info "Will remove images"
+    fi
+    
+    # Stop all services from docker-compose.yml
+    # shellcheck disable=SC2086
+    docker compose -f docker-compose.yml down $down_flags 2>/dev/null || true
     
     log_success "Services stopped"
 }
 
-# Remove volumes
-remove_volumes() {
-    if [[ "$REMOVE_VOLUMES" == true ]]; then
-        log_info "Removing persistent volumes..."
-        
-        docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.gpu.yml \
-            -f docker-compose.cpu.yml \
-            down -v 2>/dev/null || true
-        
-        log_success "Volumes removed"
-    fi
-}
-
-# Remove images
-remove_images() {
-    if [[ "$REMOVE_IMAGES" == true ]]; then
-        log_info "Removing Docker images..."
-        
-        # Get image names from compose files and remove them
-        docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.gpu.yml \
-            -f docker-compose.cpu.yml \
-            down --rmi local 2>/dev/null || true
-        
-        log_success "Images removed"
+# Show status
+show_status() {
+    echo ""
+    
+    # Check if any containers are still running
+    local running_containers
+    running_containers=$(docker compose -f docker-compose.yml ps -q 2>/dev/null | wc -l)
+    
+    if [[ "$running_containers" -eq 0 ]]; then
+        log_success "All SP1 Cluster containers have been stopped"
+    else
+        log_warn "Some containers may still be running. Check with: docker compose ps"
     fi
 }
 
@@ -148,19 +142,21 @@ main() {
     echo ""
     
     stop_services
-    remove_volumes
-    remove_images
+    show_status
     
     echo ""
-    log_success "SP1 Cluster has been stopped"
-    
     if [[ "$REMOVE_VOLUMES" == true ]]; then
         log_info "Persistent data has been removed"
     else
         log_info "Persistent data preserved. Use --remove-volumes to delete."
     fi
+    
+    if [[ "$REMOVE_IMAGES" == true ]]; then
+        log_info "Docker images have been removed"
+    else
+        log_info "Docker images preserved. Use --remove-images to delete."
+    fi
     echo ""
 }
 
 main
-

@@ -6,9 +6,10 @@
 #   ./start-sp1-cluster.sh [OPTIONS]
 #
 # Options:
-#   --gpu-nodes N    Number of GPU worker nodes (default: 1)
+#   --gpu-nodes N    Number of GPU worker nodes (0-8, default: 1)
 #                    Use 0 for CPU-only mode
-#   --build          Force re-pull of Docker images
+#   --mixed          Use mixed worker instead of separate CPU/GPU workers
+#   --pull           Force re-pull of Docker images
 #   --detach, -d     Run in detached mode
 #   --help, -h       Show this help message
 #
@@ -17,6 +18,7 @@
 #   ./start-sp1-cluster.sh --gpu-nodes 2    # 2 GPU workers
 #   ./start-sp1-cluster.sh --gpu-nodes 0    # CPU-only mode
 #   ./start-sp1-cluster.sh --gpu-nodes 4 -d # 4 GPU workers, detached
+#   ./start-sp1-cluster.sh --mixed -d       # Mixed mode worker
 
 set -euo pipefail
 
@@ -26,8 +28,9 @@ cd "$SCRIPT_DIR"
 
 # Default values
 GPU_NODES=1
-FORCE_BUILD=false
+FORCE_PULL=false
 DETACH=false
+MIXED_MODE=false
 
 # Colors for output
 RED='\033[0;31m'
@@ -62,25 +65,31 @@ Usage:
   $0 [OPTIONS]
 
 Options:
-  --gpu-nodes N    Number of GPU worker nodes (default: 1)
+  --gpu-nodes N    Number of GPU worker nodes (0-8, default: 1)
                    Use 0 for CPU-only mode
-  --build          Force re-pull of Docker images
+  --mixed          Use mixed worker (WORKER_TYPE=ALL) instead of separate workers
+  --pull           Force re-pull of Docker images
   --detach, -d     Run in detached mode
   --help, -h       Show this help message
 
 Examples:
   $0                        # 1 GPU worker (default)
-  $0 --gpu-nodes 2          # 2 GPU workers
-  $0 --gpu-nodes 0          # CPU-only mode
+  $0 --gpu-nodes 2          # 2 GPU workers (gpu0, gpu1) + cpu-node
+  $0 --gpu-nodes 0          # CPU-only mode (cpu-node only)
   $0 --gpu-nodes 4 -d       # 4 GPU workers, detached
+  $0 --mixed -d             # Mixed mode worker, detached
 
 Images:
   Uses pre-built images from ghcr.io/succinctlabs/sp1-cluster
 
-API Endpoint:
-  Once running, the proving API will be available at:
-  http://localhost:8080
+Services:
+  Core:     redis, postgresql, api, coordinator
+  CPU:      cpu-node (or mixed)
+  GPU:      gpu0, gpu1, gpu2, gpu3, gpu4, gpu5, gpu6, gpu7
 
+API Endpoints:
+  gRPC API:     http://localhost:50051
+  
 EOF
     exit 0
 }
@@ -92,8 +101,12 @@ while [[ $# -gt 0 ]]; do
             GPU_NODES="$2"
             shift 2
             ;;
-        --build)
-            FORCE_BUILD=true
+        --mixed)
+            MIXED_MODE=true
+            shift
+            ;;
+        --pull)
+            FORCE_PULL=true
             shift
             ;;
         --detach|-d)
@@ -110,9 +123,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Validate GPU_NODES is a non-negative integer
-if ! [[ "$GPU_NODES" =~ ^[0-9]+$ ]]; then
-    log_error "--gpu-nodes must be a non-negative integer"
+# Validate GPU_NODES is a valid integer (0-8)
+if ! [[ "$GPU_NODES" =~ ^[0-8]$ ]]; then
+    log_error "--gpu-nodes must be an integer between 0 and 8"
     exit 1
 fi
 
@@ -125,9 +138,6 @@ if [[ -f ".env" ]]; then
 else
     log_warn "No .env file found. Using defaults. Copy env.example to .env to customize."
 fi
-
-# Configuration
-API_PORT="${API_PORT:-8080}"
 
 # Check prerequisites
 check_prerequisites() {
@@ -159,43 +169,52 @@ check_prerequisites() {
 # Pull Docker images
 pull_images() {
     log_info "Pulling Docker images..."
-    
-    # Pull base images
     docker compose -f docker-compose.yml pull
+    log_success "Docker images pulled"
+}
+
+# Build the list of services to start
+get_services() {
+    local services="redis postgresql api coordinator"
     
-    # Pull worker images based on mode
-    if [[ "$GPU_NODES" -gt 0 ]]; then
-        docker compose -f docker-compose.yml -f docker-compose.gpu.yml pull
+    if [[ "$MIXED_MODE" == true ]]; then
+        services="$services mixed"
     else
-        docker compose -f docker-compose.yml -f docker-compose.cpu.yml pull
+        # Add CPU node
+        services="$services cpu-node"
+        
+        # Add GPU nodes
+        for ((i=0; i<GPU_NODES; i++)); do
+            services="$services gpu${i}"
+        done
     fi
     
-    log_success "Docker images pulled"
+    echo "$services"
 }
 
 # Start the cluster
 start_cluster() {
-    local compose_files="-f docker-compose.yml"
-    local scale_args=""
-    local detach_flag=""
+    local services
+    services=$(get_services)
     
+    local detach_flag=""
     if [[ "$DETACH" == true ]]; then
         detach_flag="-d"
     fi
     
-    # Determine worker configuration
-    if [[ "$GPU_NODES" -gt 0 ]]; then
-        compose_files="$compose_files -f docker-compose.gpu.yml"
-        scale_args="--scale sp1-gpu-worker=$GPU_NODES"
-        log_info "Starting SP1 Cluster with $GPU_NODES GPU worker(s)..."
+    if [[ "$MIXED_MODE" == true ]]; then
+        log_info "Starting SP1 Cluster in mixed mode..."
+    elif [[ "$GPU_NODES" -gt 0 ]]; then
+        log_info "Starting SP1 Cluster with $GPU_NODES GPU worker(s) + cpu-node..."
     else
-        compose_files="$compose_files -f docker-compose.cpu.yml"
-        scale_args="--scale sp1-cpu-worker=1"
         log_info "Starting SP1 Cluster in CPU-only mode..."
     fi
     
+    log_info "Services: $services"
+    
     # Start services
-    docker compose $compose_files up $detach_flag $scale_args
+    # shellcheck disable=SC2086
+    docker compose -f docker-compose.yml up $detach_flag $services
 }
 
 # Wait for services to be healthy
@@ -206,8 +225,9 @@ wait_for_health() {
     local attempt=0
     
     while [[ $attempt -lt $max_attempts ]]; do
-        if curl -s "http://localhost:${API_PORT}/health" > /dev/null 2>&1; then
-            log_success "SP1 Cluster API is healthy"
+        # Check if API container is running and healthy
+        if docker compose -f docker-compose.yml ps api 2>/dev/null | grep -q "Up"; then
+            log_success "SP1 Cluster API is running"
             return 0
         fi
         
@@ -216,30 +236,37 @@ wait_for_health() {
         sleep 2
     done
     
-    log_warn "API health check timed out. Services may still be starting..."
+    log_warn "Health check timed out. Services may still be starting..."
     return 1
 }
 
 # Print cluster information
 print_info() {
+    local services
+    services=$(get_services)
+    
     echo ""
     echo "========================================"
     echo -e "${GREEN}SP1 Cluster is running!${NC}"
     echo "========================================"
     echo ""
-    echo "HTTP API:        http://localhost:${API_PORT}"
-    echo "gRPC API:        http://localhost:${API_GRPC_PORT:-50051}"
-    echo "Coordinator:     http://localhost:${COORDINATOR_PORT:-50052}"
+    echo "gRPC API:        http://localhost:50051"
+    echo "Redis:           localhost:6379"
     echo ""
-    if [[ "$GPU_NODES" -gt 0 ]]; then
-        echo "Worker Mode:     GPU ($GPU_NODES worker(s))"
+    if [[ "$MIXED_MODE" == true ]]; then
+        echo "Worker Mode:     Mixed (ALL)"
+    elif [[ "$GPU_NODES" -gt 0 ]]; then
+        echo "Worker Mode:     GPU ($GPU_NODES worker(s)) + CPU"
     else
-        echo "Worker Mode:     CPU"
+        echo "Worker Mode:     CPU only"
     fi
     echo ""
+    echo "Running services: $services"
+    echo ""
     echo "Useful commands:"
-    echo "  View logs:     cd $(pwd) && docker compose logs -f"
-    echo "  Stop cluster:  ./stop-sp1-cluster.sh"
+    echo "  View logs:     cd $SCRIPT_DIR && docker compose logs -f"
+    echo "  View status:   cd $SCRIPT_DIR && docker compose ps"
+    echo "  Stop cluster:  $SCRIPT_DIR/stop-sp1-cluster.sh"
     echo ""
 }
 
@@ -253,8 +280,8 @@ main() {
     
     check_prerequisites
     
-    # Pull images if not already available or if force build requested
-    if [[ "$FORCE_BUILD" == true ]] || ! docker images | grep -q "sp1-cluster"; then
+    # Pull images if requested or if images not available
+    if [[ "$FORCE_PULL" == true ]]; then
         pull_images
     fi
     
@@ -267,4 +294,3 @@ main() {
 }
 
 main
-

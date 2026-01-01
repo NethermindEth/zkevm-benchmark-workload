@@ -168,9 +168,9 @@ impl From<Resource> for ProverResourceType {
                 // Read from environment variables since ClusterProverConfig::default() 
                 // creates empty strings (clap env vars only work during arg parsing)
                 let endpoint = std::env::var("SP1_CLUSTER_ENDPOINT")
-                    .unwrap_or_else(|_| "http://0.0.0.0:50051/".to_string());
+                    .unwrap_or_else(|_| "http://172.17.0.1:50051".to_string());
                 let redis_url = std::env::var("SP1_CLUSTER_REDIS_URL")
-                    .unwrap_or_else(|_| "redis://:redispassword@0.0.0.0:6379/0".to_string());
+                    .unwrap_or_else(|_| "redis://:redispassword@172.17.0.1:6379/0".to_string());
                 Self::Cluster(ClusterProverConfig { endpoint, redis_url })
             }
         }
