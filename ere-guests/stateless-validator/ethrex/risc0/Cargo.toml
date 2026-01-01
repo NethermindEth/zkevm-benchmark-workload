@@ -6,7 +6,7 @@ edition = "2024"
 [workspace]
 
 [dependencies]
-ere-platform-risc0 = { git = "https://github.com/NethermindEth/ere", rev = "789609ef38b1d198af59e0511acee82a0a203532", default-features = false, features = [
+ere-platform-risc0 = { git = "https://github.com/NethermindEth/ere", rev = "ecdc5888dcde0a68e3d58e5a91015dbe928ff29f", default-features = false, features = [
     "std",
     "unstable",
     "getrandom",

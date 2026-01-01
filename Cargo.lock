@@ -1456,7 +1456,7 @@ dependencies = [
  "bitflags 2.10.0",
  "cexpr",
  "clang-sys",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "proc-macro2",
  "quote",
  "regex",
@@ -2534,7 +2534,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users 0.5.2",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2810,7 +2810,7 @@ dependencies = [
 [[package]]
 name = "ere-build-utils"
 version = "0.0.15"
-source = "git+https://github.com/NethermindEth/ere?rev=789609ef38b1d198af59e0511acee82a0a203532#789609ef38b1d198af59e0511acee82a0a203532"
+source = "git+https://github.com/NethermindEth/ere?rev=ecdc5888dcde0a68e3d58e5a91015dbe928ff29f#ecdc5888dcde0a68e3d58e5a91015dbe928ff29f"
 dependencies = [
  "cargo_metadata",
 ]
@@ -2818,7 +2818,7 @@ dependencies = [
 [[package]]
 name = "ere-compiler"
 version = "0.0.15"
-source = "git+https://github.com/NethermindEth/ere?rev=789609ef38b1d198af59e0511acee82a0a203532#789609ef38b1d198af59e0511acee82a0a203532"
+source = "git+https://github.com/NethermindEth/ere?rev=ecdc5888dcde0a68e3d58e5a91015dbe928ff29f#ecdc5888dcde0a68e3d58e5a91015dbe928ff29f"
 dependencies = [
  "anyhow",
  "bincode 2.0.1",
@@ -2831,7 +2831,7 @@ dependencies = [
 [[package]]
 name = "ere-dockerized"
 version = "0.0.15"
-source = "git+https://github.com/NethermindEth/ere?rev=789609ef38b1d198af59e0511acee82a0a203532#789609ef38b1d198af59e0511acee82a0a203532"
+source = "git+https://github.com/NethermindEth/ere?rev=ecdc5888dcde0a68e3d58e5a91015dbe928ff29f#ecdc5888dcde0a68e3d58e5a91015dbe928ff29f"
 dependencies = [
  "anyhow",
  "ere-build-utils",
@@ -2863,7 +2863,7 @@ dependencies = [
 [[package]]
 name = "ere-io"
 version = "0.0.15"
-source = "git+https://github.com/NethermindEth/ere?rev=789609ef38b1d198af59e0511acee82a0a203532#789609ef38b1d198af59e0511acee82a0a203532"
+source = "git+https://github.com/NethermindEth/ere?rev=ecdc5888dcde0a68e3d58e5a91015dbe928ff29f#ecdc5888dcde0a68e3d58e5a91015dbe928ff29f"
 dependencies = [
  "bincode 2.0.1",
  "rkyv",
@@ -2873,7 +2873,7 @@ dependencies = [
 [[package]]
 name = "ere-platform-trait"
 version = "0.0.15"
-source = "git+https://github.com/NethermindEth/ere?rev=789609ef38b1d198af59e0511acee82a0a203532#789609ef38b1d198af59e0511acee82a0a203532"
+source = "git+https://github.com/NethermindEth/ere?rev=ecdc5888dcde0a68e3d58e5a91015dbe928ff29f#ecdc5888dcde0a68e3d58e5a91015dbe928ff29f"
 dependencies = [
  "digest 0.10.7",
 ]
@@ -2881,7 +2881,7 @@ dependencies = [
 [[package]]
 name = "ere-server"
 version = "0.0.15"
-source = "git+https://github.com/NethermindEth/ere?rev=789609ef38b1d198af59e0511acee82a0a203532#789609ef38b1d198af59e0511acee82a0a203532"
+source = "git+https://github.com/NethermindEth/ere?rev=ecdc5888dcde0a68e3d58e5a91015dbe928ff29f#ecdc5888dcde0a68e3d58e5a91015dbe928ff29f"
 dependencies = [
  "anyhow",
  "bincode 2.0.1",
@@ -2896,7 +2896,7 @@ dependencies = [
 [[package]]
 name = "ere-zkvm-interface"
 version = "0.0.15"
-source = "git+https://github.com/NethermindEth/ere?rev=789609ef38b1d198af59e0511acee82a0a203532#789609ef38b1d198af59e0511acee82a0a203532"
+source = "git+https://github.com/NethermindEth/ere?rev=ecdc5888dcde0a68e3d58e5a91015dbe928ff29f#ecdc5888dcde0a68e3d58e5a91015dbe928ff29f"
 dependencies = [
  "anyhow",
  "auto_impl",
@@ -2915,7 +2915,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4127,7 +4127,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "system-configuration",
  "tokio",
  "tower-service",
@@ -5357,7 +5357,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6369,7 +6369,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a56d757972c98b346a9b766e3f02746cde6dd1cd1d1d563472929fdd74bec4d"
 dependencies = [
  "anyhow",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "proc-macro2",
  "quote",
  "syn 2.0.111",
@@ -6382,7 +6382,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9120690fafc389a67ba3803df527d0ec9cbbc9cc45e4cc20b332996dfb672425"
 dependencies = [
  "anyhow",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "proc-macro2",
  "quote",
  "syn 2.0.111",
@@ -6471,7 +6471,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash",
  "rustls",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -6508,9 +6508,9 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "tracing",
- "windows-sys 0.59.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -8788,7 +8788,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -9690,7 +9690,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.2",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
