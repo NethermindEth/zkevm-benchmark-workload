@@ -145,6 +145,8 @@ pub enum Resource {
     Gpu,
     /// Network resource (SP1 only, NETWORK_PRIVATE_KEY env var is optional)
     Network,
+    /// Cluster resource (requires SP1 Cluster to be running)
+    Cluster,
 }
 
 /// Benchmark actions
@@ -162,6 +164,7 @@ impl From<Resource> for ProverResourceType {
             Resource::Cpu => Self::Cpu,
             Resource::Gpu => Self::Gpu,
             Resource::Network => Self::Network(NetworkProverConfig::default()),
+            Resource::Cluster => Self::Cluster,
         }
     }
 }
