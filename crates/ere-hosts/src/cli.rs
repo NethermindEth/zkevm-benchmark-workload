@@ -6,7 +6,7 @@ use anyhow::Result;
 use benchmark_runner::{stateless_executor, stateless_validator};
 use clap::{Parser, Subcommand, ValueEnum};
 use ere_dockerized::zkVMKind;
-use ere_zkvm_interface::{NetworkProverConfig, ProverResourceType};
+use ere_zkvm_interface::{ClusterProverConfig, NetworkProverConfig, ProverResourceType};
 
 /// Command line interface for the zkVM benchmarker
 #[derive(Parser)]
@@ -164,7 +164,15 @@ impl From<Resource> for ProverResourceType {
             Resource::Cpu => Self::Cpu,
             Resource::Gpu => Self::Gpu,
             Resource::Network => Self::Network(NetworkProverConfig::default()),
-            Resource::Cluster => Self::Cluster,
+            Resource::Cluster => {
+                // Read from environment variables since ClusterProverConfig::default() 
+                // creates empty strings (clap env vars only work during arg parsing)
+                let endpoint = std::env::var("SP1_CLUSTER_ENDPOINT")
+                    .unwrap_or_else(|_| "http://127.0.0.1:50051/".to_string());
+                let redis_url = std::env::var("SP1_CLUSTER_REDIS_URL")
+                    .unwrap_or_else(|_| "redis://:redispassword@127.0.0.1:6379/0".to_string());
+                Self::Cluster(ClusterProverConfig { endpoint, redis_url })
+            }
         }
     }
 }
