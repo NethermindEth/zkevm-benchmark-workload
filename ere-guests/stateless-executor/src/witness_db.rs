@@ -1,9 +1,9 @@
 //! Provides the [`WitnessDatabase`] type for EVM execution backed by witness data.
 
 use alloc::collections::btree_map::BTreeMap;
-use alloy_primitives::{map::B256Map, Address, B256, U256};
+use alloy_primitives::{Address, B256, U256, map::B256Map};
 use reth_errors::ProviderError;
-use reth_revm::{bytecode::Bytecode, state::AccountInfo, Database};
+use reth_revm::{Database, bytecode::Bytecode, state::AccountInfo};
 use reth_stateless::trie::StatelessTrie;
 
 /// An EVM database implementation backed by witness data.

@@ -8,12 +8,12 @@ use alloc::{
     vec::Vec,
 };
 use alloy_consensus::{BlockHeader, Header};
-use alloy_primitives::{keccak256, Address, B256};
+use alloy_primitives::{Address, B256, keccak256};
 use reth_chainspec::{EthChainSpec, EthereumHardforks};
 use reth_ethereum_primitives::{Block, EthPrimitives, TransactionSigned};
-use reth_evm::{execute::Executor, ConfigureEvm};
+use reth_evm::{ConfigureEvm, execute::Executor};
 use reth_primitives_traits::{Block as _, RecoveredBlock, SealedHeader};
-use reth_stateless::{trie::StatelessTrie, UncompressedPublicKey};
+use reth_stateless::{UncompressedPublicKey, trie::StatelessTrie};
 
 /// Errors that can occur during stateless execution.
 #[derive(Debug, thiserror::Error)]
@@ -117,8 +117,8 @@ where
 
     // Step 3: Build state from witness using the StatelessTrie trait
     // Note: We pass the parent state root but don't validate it matches
-    let (trie, bytecode) =
-        T::new(&witness, parent_state_root).map_err(|_| StatelessExecutionError::WitnessBuildFailed)?;
+    let (trie, bytecode) = T::new(&witness, parent_state_root)
+        .map_err(|_| StatelessExecutionError::WitnessBuildFailed)?;
 
     // Step 4: Create an in-memory database for EVM execution
     let db = WitnessDatabase::new(&trie, bytecode, ancestor_hashes);
@@ -214,7 +214,7 @@ fn verify_and_compute_sender(
     tx: &TransactionSigned,
     is_homestead: bool,
 ) -> Result<Address, StatelessExecutionError> {
-    use k256::ecdsa::{signature::hazmat::PrehashVerifier, VerifyingKey};
+    use k256::ecdsa::{VerifyingKey, signature::hazmat::PrehashVerifier};
 
     let sig = tx.signature();
 

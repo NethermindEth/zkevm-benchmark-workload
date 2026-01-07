@@ -2,7 +2,7 @@
 
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use benchmark_runner::{
     block_encoding_length_program, empty_program,
     runner::{Action, RunConfig, get_zkvm_instances, run_benchmark},
@@ -16,7 +16,9 @@ use std::path::{Path, PathBuf};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
-use crate::cli::{Cli, GuestProgramCommand, Resource, StatelessExecutorClient, StatelessValidatorClient};
+use crate::cli::{
+    Cli, GuestProgramCommand, Resource, StatelessExecutorClient, StatelessValidatorClient,
+};
 
 pub mod cli;
 

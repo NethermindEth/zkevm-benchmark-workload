@@ -55,10 +55,9 @@ pub fn stateless_validator_inputs_from(
 
 /// Reads a single benchmark fixture file.
 fn read_benchmark_fixture_file(path: &Path) -> Result<StatelessValidationFixture> {
-    let content = std::fs::read(path)
-        .with_context(|| format!("Failed to read file: {}", path.display()))?;
-    serde_json::from_slice(&content)
-        .with_context(|| format!("Failed to parse {}", path.display()))
+    let content =
+        std::fs::read(path).with_context(|| format!("Failed to read file: {}", path.display()))?;
+    serde_json::from_slice(&content).with_context(|| format!("Failed to parse {}", path.display()))
 }
 
 /// Reads the benchmark fixtures folder and returns a list of block and witness pairs.

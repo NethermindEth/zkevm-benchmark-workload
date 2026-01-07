@@ -52,4 +52,3 @@ fn get_input_execution(
         public_keys: signers,
     })
 }
-

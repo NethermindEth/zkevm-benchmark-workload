@@ -33,8 +33,7 @@ mod execution;
 pub mod guest;
 mod witness_db;
 
-pub use execution::{stateless_execution_with_trie, StatelessExecutionError};
+pub use execution::{StatelessExecutionError, stateless_execution_with_trie};
 
 // Re-export types that users will need
 pub use reth_stateless::{ExecutionWitness, Genesis, StatelessInput, UncompressedPublicKey};
-

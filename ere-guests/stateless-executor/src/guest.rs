@@ -2,8 +2,8 @@
 
 use alloc::{sync::Arc, vec::Vec};
 use ere_io::{
-    serde::{bincode::BincodeLegacy, IoSerde},
     Io,
+    serde::{IoSerde, bincode::BincodeLegacy},
 };
 use ere_platform_trait::Platform;
 use reth_chainspec::ChainSpec;
@@ -57,4 +57,3 @@ impl Guest for RethStatelessExecutorGuest {
         })
     }
 }
-

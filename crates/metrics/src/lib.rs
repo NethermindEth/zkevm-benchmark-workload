@@ -5,7 +5,7 @@ pub use chrono;
 
 use serde_derive::{Deserialize, Serialize};
 use std::{collections::HashMap, fs, io, path::Path, time::Duration};
-use sysinfo::{CpuExt, System, SystemExt, Pid, ProcessExt};
+use sysinfo::{CpuExt, Pid, ProcessExt, System, SystemExt};
 use thiserror::Error;
 
 /// Represents a single benchmark run.
@@ -55,7 +55,7 @@ pub struct MemoryTracker {
 impl MemoryTracker {
     /// Creates a new memory tracker
     pub fn new() -> Self {
-        let process_id = Pid::from (std::process::id() as i32);
+        let process_id = Pid::from(std::process::id() as i32);
 
         Self {
             process_id,
@@ -207,15 +207,15 @@ pub enum ProvingMetrics {
         proof_size: usize,
         /// Proving time in milliseconds.
         proving_time_ms: u128,
-                /// Peak memory usage during proving in bytes.
-                #[serde(skip_serializing_if = "Option::is_none")]
-                peak_memory_usage_bytes: Option<u64>,
-                /// Average memory usage during proving in bytes.
-                #[serde(skip_serializing_if = "Option::is_none")]
-                average_memory_usage_bytes: Option<u64>,
-                /// Memory usage at start of proving in bytes.
-                #[serde(skip_serializing_if = "Option::is_none")]
-                initial_memory_usage_bytes: Option<u64>,
+        /// Peak memory usage during proving in bytes.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        peak_memory_usage_bytes: Option<u64>,
+        /// Average memory usage during proving in bytes.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        average_memory_usage_bytes: Option<u64>,
+        /// Memory usage at start of proving in bytes.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        initial_memory_usage_bytes: Option<u64>,
     },
     /// Metrics for a crashed proving workload.
     Crashed(CrashInfo),

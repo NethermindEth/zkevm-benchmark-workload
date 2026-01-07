@@ -10,7 +10,11 @@ use std::{any::Any, panic};
 use tracing::{error, info};
 
 #[cfg(feature = "memory-tracking")]
-use std::{sync::{Arc, Mutex}, thread, time::Duration as StdDuration};
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration as StdDuration,
+};
 #[cfg(feature = "memory-tracking")]
 use zkevm_metrics::MemoryTracker;
 
@@ -130,7 +134,8 @@ fn process_input(zkvm: &DockerizedzkVM, io: impl GuestFixture, config: &RunConfi
                     let tracker = memory_tracker_clone.clone();
                     thread::spawn(move || {
                         let start = std::time::Instant::now();
-                        while start.elapsed().as_secs() < 3600 { // Max 1 hour timeout
+                        while start.elapsed().as_secs() < 3600 {
+                            // Max 1 hour timeout
                             {
                                 let mut tracker = tracker.lock().unwrap();
                                 tracker.sample_memory();
