@@ -94,6 +94,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             proving: Some(ProvingMetrics::Success {
                 proof_size: 256,
                 proving_time_ms: 2_000,
+                peak_memory_usage_bytes: None,
+                average_memory_usage_bytes: None,
+                initial_memory_usage_bytes: None,
             }),
         },
         // ... other workloads
