@@ -131,7 +131,7 @@ fn process_input(zkvm: &DockerizedzkVM, io: impl GuestFixture, config: &RunConfi
 
                 // Start background memory sampling thread
                 let sample_handle = {
-                    let tracker = memory_tracker_clone.clone();
+                    let tracker = memory_tracker_clone;
                     thread::spawn(move || {
                         let start = std::time::Instant::now();
                         while start.elapsed().as_secs() < 3600 {

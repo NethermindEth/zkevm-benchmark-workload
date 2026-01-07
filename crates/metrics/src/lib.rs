@@ -52,6 +52,12 @@ pub struct MemoryTracker {
     memory_samples: Vec<u64>,
 }
 
+impl Default for MemoryTracker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MemoryTracker {
     /// Creates a new memory tracker
     pub fn new() -> Self {
@@ -107,7 +113,7 @@ impl MemoryTracker {
     }
 
     /// Gets the peak memory usage in bytes
-    pub fn get_peak_memory(&self) -> u64 {
+    pub const fn get_peak_memory(&self) -> u64 {
         self.peak_memory
     }
 
@@ -117,7 +123,7 @@ impl MemoryTracker {
     }
 
     /// Gets the initial memory usage
-    pub fn get_initial_memory(&self) -> u64 {
+    pub const fn get_initial_memory(&self) -> u64 {
         self.initial_memory
     }
 }
