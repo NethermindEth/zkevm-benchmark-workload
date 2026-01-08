@@ -4,14 +4,16 @@ EIP-3155 compliant EVM execution tracer for stateless block execution.
 
 ## Overview
 
-This crate provides full EIP-3155 opcode-level tracing for Ethereum block execution using reth's stateless execution infrastructure. It's designed for host-side debugging and analysis, separate from zkVM guest programs.
+This crate provides EIP-3155 opcode-level tracing for Ethereum block execution using reth's stateless execution infrastructure. It's designed for host-side debugging and analysis, separate from zkVM guest programs.
+
+**Default output**: By default, only minimal fields are included: `pc` (program counter), `op` (opcode), and `gasCost`. Use the builder methods to enable additional fields.
 
 ## Features
 
-- **Full EIP-3155 compliance** - Outputs traces in the standard format
+- **EIP-3155 compliance** - Outputs traces in the standard format
 - **Opcode-level tracing** - Records every EVM instruction executed
 - **Geth-compatible output** - Produces traces compatible with geth's `debug_traceTransaction`
-- **Configurable output** - Control memory/storage inclusion and formatting
+- **Configurable output** - Control which fields are included (stack, memory, storage, etc.)
 - **JSONL format** - Easy to parse, stream, and process
 
 ## Usage
@@ -30,9 +32,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create trace output file
     let output_file = File::create("trace.jsonl")?;
+    
+    // Minimal output (default): only pc, op, gasCost
+    let config = TraceOutput::default();
+    
+    // Or include additional fields:
     let config = TraceOutput::default()
+        .with_stack()    // Include stack snapshots
         .with_storage()  // Include storage changes
         .with_memory();  // Include memory snapshots
+    
+    // Or include all fields:
+    let config = TraceOutput::full();
 
     let mut writer = TraceWriter::new(BufWriter::new(output_file), config);
 
@@ -119,13 +130,25 @@ Key fields per step:
 
 ### TraceOutput
 
-Configure what information to include in traces:
+Configure what information to include in traces. By default, only `pc`, `op`, and `gasCost` are included:
 
 ```rust
+// Minimal output (default)
+let config = TraceOutput::default();
+
+// Add specific fields
 let config = TraceOutput::default()
+    .with_stack()        // Include stack snapshots
     .with_memory()       // Include memory snapshots
     .with_storage()      // Include storage changes
+    .with_return_data()  // Include return data
+    .with_gas()          // Include gas remaining
+    .with_depth()        // Include call depth
+    .with_refund()       // Include gas refund counter
     .with_pretty_print(); // Pretty-print JSON output
+
+// Include all fields
+let config = TraceOutput::full();
 ```
 
 ### TraceWriter

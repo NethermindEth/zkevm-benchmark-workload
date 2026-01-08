@@ -30,10 +30,19 @@ fn main() -> Result<()> {
     );
     info!("Output folder: {}", cli.output_folder.display());
 
-    let config = tracer::TraceConfig {
-        include_memory: cli.include_memory,
-        include_storage: cli.include_storage,
-        pretty_print: cli.pretty_print,
+    let config = if cli.full {
+        tracer::TraceConfig::full()
+    } else {
+        tracer::TraceConfig {
+            include_stack: cli.include_stack,
+            include_memory: cli.include_memory,
+            include_storage: cli.include_storage,
+            include_return_data: cli.include_return_data,
+            include_gas: cli.include_gas,
+            include_depth: cli.include_depth,
+            include_refund: cli.include_refund,
+            pretty_print: cli.pretty_print,
+        }
     };
 
     let results = tracer::trace_fixtures(

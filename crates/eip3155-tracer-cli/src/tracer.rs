@@ -15,12 +15,24 @@ use walkdir::WalkDir;
 use witness_generator::StatelessExecutorFixture;
 
 /// Configuration for opcode tracing.
+///
+/// By default, only minimal fields are included: `pc`, `op` (opcode), and `gasCost`.
 #[derive(Debug, Clone)]
 pub(crate) struct TraceConfig {
+    /// Include stack snapshots in the trace.
+    pub include_stack: bool,
     /// Include memory snapshots in the trace (increases output size significantly).
     pub include_memory: bool,
     /// Include storage changes in the trace.
     pub include_storage: bool,
+    /// Include return data in the trace.
+    pub include_return_data: bool,
+    /// Include gas remaining in the trace (not just gasCost).
+    pub include_gas: bool,
+    /// Include call depth in the trace.
+    pub include_depth: bool,
+    /// Include gas refund counter in the trace.
+    pub include_refund: bool,
     /// Pretty-print JSON output.
     pub pretty_print: bool,
 }
@@ -28,9 +40,30 @@ pub(crate) struct TraceConfig {
 impl Default for TraceConfig {
     fn default() -> Self {
         Self {
+            include_stack: false,
             include_memory: false,
             include_storage: false,
-            pretty_print: true,
+            include_return_data: false,
+            include_gas: false,
+            include_depth: false,
+            include_refund: false,
+            pretty_print: false,
+        }
+    }
+}
+
+impl TraceConfig {
+    /// Create a configuration with all fields enabled.
+    pub(crate) fn full() -> Self {
+        Self {
+            include_stack: true,
+            include_memory: true,
+            include_storage: true,
+            include_return_data: true,
+            include_gas: true,
+            include_depth: true,
+            include_refund: true,
+            pretty_print: false,
         }
     }
 }
@@ -106,8 +139,13 @@ fn trace_single_fixture(
 
     // Create trace output configuration
     let trace_output = TraceOutput {
+        include_stack: config.include_stack,
         include_memory: config.include_memory,
         include_storage: config.include_storage,
+        include_return_data: config.include_return_data,
+        include_gas: config.include_gas,
+        include_depth: config.include_depth,
+        include_refund: config.include_refund,
         pretty_print: config.pretty_print,
     };
 

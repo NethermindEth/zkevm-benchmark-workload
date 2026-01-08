@@ -113,12 +113,16 @@ pub fn trace_block<W: Write>(
     let chain_spec: Arc<reth_chainspec::ChainSpec> = Arc::new(genesis.into());
     let evm_config = EthEvmConfig::new(chain_spec.clone());
 
+    // Get the trace config from the writer
+    let trace_config = writer.config().clone();
+
     trace_block_with_config::<SparseState, W>(
         block,
         public_keys,
         witness,
         chain_spec,
         evm_config,
+        trace_config,
         writer,
     )
 }
@@ -133,6 +137,7 @@ fn trace_block_with_config<T, W>(
     witness: ExecutionWitness,
     chain_spec: Arc<reth_chainspec::ChainSpec>,
     evm_config: EthEvmConfig,
+    trace_config: crate::output::TraceOutput,
     writer: &mut TraceWriter<W>,
 ) -> Result<TracedExecution, TracedExecutionError>
 where
@@ -169,10 +174,16 @@ where
     for (tx_index, (sender, tx)) in recovered_block.transactions_with_sender().enumerate() {
         let tx_hash = tx.tx_hash();
 
-        // Create tracing inspector with full EIP-3155 config
+        // Create tracing inspector based on config
+        let stack_snapshots = if trace_config.include_stack {
+            StackSnapshotType::Full
+        } else {
+            StackSnapshotType::None
+        };
+
         let inspector_config = TracingInspectorConfig::default_geth()
-            .set_memory_snapshots(true)
-            .set_stack_snapshots(StackSnapshotType::Full);
+            .set_memory_snapshots(trace_config.include_memory)
+            .set_stack_snapshots(stack_snapshots);
 
         let mut inspector = TracingInspector::new(inspector_config);
 
@@ -207,11 +218,12 @@ where
                     .cloned()
                     .unwrap_or_default();
 
-                // Build full EIP-3155 trace with structLogs
+                // Build EIP-3155 trace with configurable structLogs
                 let geth_trace_opts = GethDefaultTracingOptions::default()
-                    .with_enable_memory(true)
-                    .with_disable_stack(false)
-                    .with_disable_storage(false);
+                    .with_enable_memory(trace_config.include_memory)
+                    .with_disable_stack(!trace_config.include_stack)
+                    .with_disable_storage(!trace_config.include_storage)
+                    .with_enable_return_data(trace_config.include_return_data);
 
                 let geth_frame = inspector
                     .into_geth_builder()

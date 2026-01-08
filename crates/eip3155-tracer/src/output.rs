@@ -12,12 +12,25 @@ use serde::Serialize;
 use std::io::Write;
 
 /// Trace output configuration.
+///
+/// By default, only minimal fields are included: `pc`, `op` (opcode), and `gasCost`.
+/// All other fields can be enabled as needed.
 #[derive(Debug, Clone)]
 pub struct TraceOutput {
+    /// Include stack snapshots in trace.
+    pub include_stack: bool,
     /// Include memory snapshots in trace.
     pub include_memory: bool,
     /// Include storage changes in trace.
     pub include_storage: bool,
+    /// Include return data in trace.
+    pub include_return_data: bool,
+    /// Include gas remaining in trace (not just gasCost).
+    pub include_gas: bool,
+    /// Include call depth in trace.
+    pub include_depth: bool,
+    /// Include gas refund counter in trace.
+    pub include_refund: bool,
     /// Pretty-print JSON output.
     pub pretty_print: bool,
 }
@@ -25,29 +38,85 @@ pub struct TraceOutput {
 impl Default for TraceOutput {
     fn default() -> Self {
         Self {
+            // Default: only pc, op, and gasCost are included
+            include_stack: false,
             include_memory: false,
-            include_storage: true,
+            include_storage: false,
+            include_return_data: false,
+            include_gas: false,
+            include_depth: false,
+            include_refund: false,
             pretty_print: false,
         }
     }
 }
 
 impl TraceOutput {
-    /// Create a new trace output configuration with memory snapshots enabled.
+    /// Create a trace output configuration with all fields enabled.
+    #[must_use]
+    pub const fn full() -> Self {
+        Self {
+            include_stack: true,
+            include_memory: true,
+            include_storage: true,
+            include_return_data: true,
+            include_gas: true,
+            include_depth: true,
+            include_refund: true,
+            pretty_print: false,
+        }
+    }
+
+    /// Enable stack snapshots in trace.
+    #[must_use]
+    pub const fn with_stack(mut self) -> Self {
+        self.include_stack = true;
+        self
+    }
+
+    /// Enable memory snapshots in trace.
     #[must_use]
     pub const fn with_memory(mut self) -> Self {
         self.include_memory = true;
         self
     }
 
-    /// Create a new trace output configuration with storage changes enabled.
+    /// Enable storage changes in trace.
     #[must_use]
     pub const fn with_storage(mut self) -> Self {
         self.include_storage = true;
         self
     }
 
-    /// Create a new trace output configuration with pretty printing enabled.
+    /// Enable return data in trace.
+    #[must_use]
+    pub const fn with_return_data(mut self) -> Self {
+        self.include_return_data = true;
+        self
+    }
+
+    /// Enable gas remaining in trace.
+    #[must_use]
+    pub const fn with_gas(mut self) -> Self {
+        self.include_gas = true;
+        self
+    }
+
+    /// Enable call depth in trace.
+    #[must_use]
+    pub const fn with_depth(mut self) -> Self {
+        self.include_depth = true;
+        self
+    }
+
+    /// Enable gas refund counter in trace.
+    #[must_use]
+    pub const fn with_refund(mut self) -> Self {
+        self.include_refund = true;
+        self
+    }
+
+    /// Enable pretty-print JSON output.
     #[must_use]
     pub const fn with_pretty_print(mut self) -> Self {
         self.pretty_print = true;
