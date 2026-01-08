@@ -112,13 +112,14 @@ benchmark-runner = { path = "crates/benchmark-runner" }
 guest-libs = { path = "ere-guests/libs" }
 block-encoding-length-guest = { path = "ere-guests/block-encoding-length/guest" }
 reth-guest = { path = "ere-guests/stateless-validator/reth/guest" }
+reth-stateless-executor = { path = "ere-guests/stateless-executor" }
 ethrex-guest = { path = "ere-guests/stateless-validator/ethrex/guest" }
 
 # ere
-ere-zkvm-interface = { git = "https://github.com/eth-applied-research-group/ere", rev = "d15c6b495d0bc42bf160ecfbb11fa7600047c821", package = "ere-zkvm-interface" }
-ere-platform-trait = { git = "https://github.com/eth-applied-research-group/ere", rev = "d15c6b495d0bc42bf160ecfbb11fa7600047c821" }
-ere-dockerized = { git = "https://github.com/eth-applied-research-group/ere", rev = "d15c6b495d0bc42bf160ecfbb11fa7600047c821", package = "ere-dockerized" }
-ere-io = { git = "https://github.com/eth-applied-research-group/ere", rev = "d15c6b495d0bc42bf160ecfbb11fa7600047c821", package = "ere-io" }
+ere-zkvm-interface = { git = "https://github.com/NethermindEth/ere", rev = "3edcc4ceb828ab8bb0840ffd9e09b4523c8c093f", package = "ere-zkvm-interface" }
+ere-platform-trait = { git = "https://github.com/NethermindEth/ere", rev = "3edcc4ceb828ab8bb0840ffd9e09b4523c8c093f" }
+ere-dockerized = { git = "https://github.com/NethermindEth/ere", rev = "3edcc4ceb828ab8bb0840ffd9e09b4523c8c093f", package = "ere-dockerized" }
+ere-io = { git = "https://github.com/NethermindEth/ere", rev = "3edcc4ceb828ab8bb0840ffd9e09b4523c8c093f", package = "ere-io" }
 
 # branch is kw/zkevm-benchmark-workload-repo
 # NOTE: We are using a branch of a branch that has not yet been merged into master.
@@ -130,14 +131,16 @@ reth-primitives-traits = { git = "https://github.com/paradigmxyz/reth", rev = "c
 reth-errors = { git = "https://github.com/paradigmxyz/reth", rev = "cfde951976bfa9100a6d9f806e06fb539ae25241" }
 reth-trie-common = { git = "https://github.com/paradigmxyz/reth", rev = "cfde951976bfa9100a6d9f806e06fb539ae25241" }
 reth-chainspec = { git = "https://github.com/paradigmxyz/reth", rev = "cfde951976bfa9100a6d9f806e06fb539ae25241" }
+reth-evm = { git = "https://github.com/paradigmxyz/reth", rev = "cfde951976bfa9100a6d9f806e06fb539ae25241" }
 reth-evm-ethereum = { git = "https://github.com/paradigmxyz/reth", rev = "cfde951976bfa9100a6d9f806e06fb539ae25241" }
+reth-revm = { git = "https://github.com/paradigmxyz/reth", rev = "cfde951976bfa9100a6d9f806e06fb539ae25241" }
 
 sparsestate = { git = "https://github.com/eth-act/zkvm-ethereum-mpt.git", tag = "v0.4.0" }
 
-ethrex-guest-program = { git = "https://github.com/lambdaclass/ethrex.git", rev = "c68e76d6b569c60a667a1240a91e637bf2ea0d0b", package = "guest_program" }
-ethrex-common = { git = "https://github.com/lambdaclass/ethrex.git", rev = "c68e76d6b569c60a667a1240a91e637bf2ea0d0b", default-features = false }
-ethrex-rlp = { git = "https://github.com/lambdaclass/ethrex.git", rev = "c68e76d6b569c60a667a1240a91e637bf2ea0d0b", default-features = false }
-ethrex-rpc = { git = "https://github.com/lambdaclass/ethrex.git", rev = "c68e76d6b569c60a667a1240a91e637bf2ea0d0b", default-features = false }
+ethrex-guest-program = { git = "https://github.com/lambdaclass/ethrex.git", rev = "e6d70854d0fe3b0f29ed8961e5cbfc5de7bdd7d1", package = "guest_program" }
+ethrex-common = { git = "https://github.com/lambdaclass/ethrex.git", rev = "e6d70854d0fe3b0f29ed8961e5cbfc5de7bdd7d1", default-features = false }
+ethrex-rlp = { git = "https://github.com/lambdaclass/ethrex.git", rev = "e6d70854d0fe3b0f29ed8961e5cbfc5de7bdd7d1", default-features = false }
+ethrex-rpc = { git = "https://github.com/lambdaclass/ethrex.git", rev = "e6d70854d0fe3b0f29ed8961e5cbfc5de7bdd7d1", default-features = false }
 
 # alloy
 alloy-eips = { version = "1.1.2" }
@@ -159,7 +162,7 @@ k256 = { version = "0.13", default-features = false }
 
 # misc
 bincode = "1.3"
-clap = { version = "4.0", features = ["derive"] }
+clap = { version = "4.0", features = ["derive", "env"] }
 serde = { version = "1.0", default-features = false }
 strum = { version = "0.26", features = ["derive"] }
 walkdir = "2.3.3"

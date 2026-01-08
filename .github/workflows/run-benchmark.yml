@@ -25,7 +25,7 @@ jobs:
     name: ${{ inputs.zkvm }} / ${{ inputs.el }}
     runs-on: [self-hosted-ghr, size-chungus-x64]
     env:
-      ERE_TAG: 0.0.15-d15c6b4
+      ERE_TAG: 0.0.16-73a760a
       OPENVM_RUST_TOOLCHAIN: nightly-2025-08-07
       RUSTC_WRAPPER: sccache
       SCCACHE_DIR: ${{ github.workspace }}/.sccache/
@@ -41,9 +41,12 @@ jobs:
           sudo apt-get install -y protobuf-compiler pkg-config libssl-dev sccache build-essential clang libclang-dev lz4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561 # stable
+        with:
+          toolchain: stable
 
       - name: Restore Rust cache
+        continue-on-error: true
         uses: jsign/action-cache@0aa95a6bc53b4dc5c7a53d773e183d8169ce2c01
         with:
           action: restore
@@ -60,11 +63,9 @@ jobs:
 
       - name: Pull ere images
         run: |
-          for variant in "base" "base-${{ inputs.zkvm }}" "compiler-${{ inputs.zkvm }}" "server-${{ inputs.zkvm }}"; do
+          for variant in "compiler-${{ inputs.zkvm }}" "server-${{ inputs.zkvm }}"; do
             src="docker.ethquokkaops.io/gh/eth-act/ere/ere-${variant}:${ERE_TAG}"
-            dst="ere-${variant}:${ERE_TAG}"
             docker pull "$src"
-            docker tag "$src" "$dst"
           done
 
       - name: Run benchmark
@@ -73,12 +74,14 @@ jobs:
             RUST_LOG=warn,benchmark_runner=info \
             ZKVM=${{ inputs.zkvm }} \
             EL=${{ inputs.el }} \
+            ERE_IMAGE_REGISTRY=docker.ethquokkaops.io/gh/eth-act/ere \
             cargo test --release -p integration-tests -- --test-threads=1 ${{ inputs.tests }}
       
       - name: sccache stats
         run: sccache --show-stats || true
 
       - name: Save Rust cache
+        continue-on-error: true
         uses: jsign/action-cache@0aa95a6bc53b4dc5c7a53d773e183d8169ce2c01
         with:
           action: save
