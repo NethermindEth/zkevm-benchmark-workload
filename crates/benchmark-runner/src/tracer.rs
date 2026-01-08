@@ -29,8 +29,8 @@ impl Default for TraceConfig {
     fn default() -> Self {
         Self {
             include_memory: false,
-            include_storage: true,
-            pretty_print: false,
+            include_storage: false,
+            pretty_print: true,
         }
     }
 }
