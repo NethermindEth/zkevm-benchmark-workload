@@ -7,7 +7,7 @@ license.workspace = true
 description = "CLI tool for generating EIP-3155 opcode traces from stateless executor fixtures"
 
 [[bin]]
-name = "eip3155-trace"
+name = "trace"
 path = "src/main.rs"
 
 [dependencies]
