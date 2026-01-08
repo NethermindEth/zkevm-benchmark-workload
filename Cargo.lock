@@ -2701,6 +2701,9 @@ dependencies = [
  "alloy-primitives",
  "alloy-rlp",
  "alloy-rpc-types-trace",
+ "anyhow",
+ "clap",
+ "guest-libs",
  "k256",
  "reth-chainspec",
  "reth-errors",
@@ -2715,6 +2718,7 @@ dependencies = [
  "serde_json",
  "sparsestate",
  "thiserror 2.0.17",
+ "witness-generator",
 ]
 
 [[package]]

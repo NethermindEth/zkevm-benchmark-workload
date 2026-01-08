@@ -14,7 +14,7 @@ use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_evm::ConfigureEvm;
 use reth_evm_ethereum::EthEvmConfig;
 use reth_primitives_traits::{Block as _, RecoveredBlock, Recovered, SealedHeader};
-use reth_revm::{DatabaseCommit, MainBuilder, MainContext, State};
+use reth_revm::{DatabaseCommit, InspectEvm, MainBuilder, MainContext, State};
 use reth_stateless::{trie::StatelessTrie, ExecutionWitness, Genesis, UncompressedPublicKey};
 use revm_inspectors::tracing::{
     StackSnapshotType, TracingInspector, TracingInspectorConfig,
@@ -188,18 +188,20 @@ where
             .with_block(evm_env.block_env.clone())
             .with_cfg(evm_env.cfg_env.clone());
 
-        // Build and execute EVM with inspector
+        // Build and execute EVM with inspector using MainBuilder trait
+        // This properly integrates the inspector into the execution flow
         let mut evm = ctx.build_mainnet_with_inspector(&mut inspector);
 
-        let result = reth_revm::ExecuteEvm::transact(&mut evm, tx_env);
+        // Execute the transaction with inspector (enables step-level tracing)
+        let result = InspectEvm::inspect_tx(&mut evm, tx_env);
 
         match result {
-            Ok(exec_result_and_state) => {
-                let gas_used = exec_result_and_state.result.gas_used();
+            Ok(result_and_state) => {
+                let gas_used = result_and_state.result.gas_used();
                 total_gas_used += gas_used;
 
                 // Get return value from execution result
-                let return_value = exec_result_and_state
+                let return_value = result_and_state
                     .result
                     .output()
                     .cloned()
@@ -221,9 +223,9 @@ where
                 writer.write_transaction_trace(tx_index, &tx_hash, &geth_trace)?;
 
                 // Commit state changes
-                state.commit(exec_result_and_state.state);
+                state.commit(result_and_state.state);
 
-                if !exec_result_and_state.result.is_success() {
+                if !result_and_state.result.is_success() {
                     all_success = false;
                 }
             }

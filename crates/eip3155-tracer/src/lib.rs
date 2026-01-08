@@ -46,7 +46,8 @@
     html_logo_url = "https://raw.githubusercontent.com/paradigmxyz/reth/main/assets/reth-docs.png",
     html_favicon_url = "https://avatars0.githubusercontent.com/u/97369466?s=256"
 )]
-#![cfg_attr(not(test), warn(unused_crate_dependencies))]
+// Note: anyhow, clap, guest-libs, witness-generator are only used by the CLI binary
+#![allow(unused_crate_dependencies)]
 
 mod output;
 mod tracer;
