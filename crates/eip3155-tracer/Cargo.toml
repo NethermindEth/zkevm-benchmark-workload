@@ -6,10 +6,6 @@ rust-version.workspace = true
 license.workspace = true
 description = "EIP-3155 compliant EVM execution tracer for stateless block execution"
 
-[[bin]]
-name = "eip3155-trace"
-path = "src/bin/trace.rs"
-
 [dependencies]
 # reth
 reth-primitives-traits.workspace = true
@@ -37,20 +33,12 @@ serde_json.workspace = true
 
 # Error handling
 thiserror.workspace = true
-anyhow.workspace = true
 
 # Crypto
 k256.workspace = true
 
 # Tracing
 revm-inspectors = { workspace = true, features = ["serde"] }
-
-# CLI
-clap.workspace = true
-
-# Fixture loading
-witness-generator.workspace = true
-guest-libs.workspace = true
 
 [lints]
 workspace = true

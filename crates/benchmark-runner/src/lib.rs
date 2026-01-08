@@ -10,3 +10,4 @@ pub mod stateless_executor;
 pub mod stateless_validator;
 
 pub mod runner;
+pub mod tracer;
