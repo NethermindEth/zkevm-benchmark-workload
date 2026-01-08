@@ -1,20 +1,24 @@
 //! Core tracing implementation using revm-inspectors.
 //!
 //! This module provides the main tracing functionality for executing blocks
-//! with full EIP-3155 opcode-level tracing.
+//! with full EIP-3155 opcode-level tracing using `TracingInspector`.
 
 use crate::output::TraceWriter;
 use crate::witness_db::WitnessDatabase;
-use alloy_consensus::{BlockHeader, Header, TxReceipt};
+use alloy_consensus::{BlockHeader, Header};
 use alloy_genesis::ChainConfig;
 use alloy_primitives::{keccak256, Address, B256};
+use alloy_rpc_types_trace::geth::{GethDefaultTracingOptions, GethTrace};
 use reth_chainspec::EthereumHardforks;
-use reth_ethereum_primitives::{Block, EthereumReceipt, TransactionSigned};
-use reth_evm::execute::Executor;
+use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_evm::ConfigureEvm;
 use reth_evm_ethereum::EthEvmConfig;
-use reth_primitives_traits::{Block as _, RecoveredBlock, SealedHeader};
+use reth_primitives_traits::{Block as _, RecoveredBlock, Recovered, SealedHeader};
+use reth_revm::{DatabaseCommit, MainBuilder, MainContext, State};
 use reth_stateless::{trie::StatelessTrie, ExecutionWitness, Genesis, UncompressedPublicKey};
+use revm_inspectors::tracing::{
+    StackSnapshotType, TracingInspector, TracingInspectorConfig,
+};
 use sparsestate::SparseState;
 use std::{collections::BTreeMap, io::Write, sync::Arc};
 
@@ -120,6 +124,9 @@ pub fn trace_block<W: Write>(
 }
 
 /// Trace block execution with specific chain configuration.
+///
+/// This function manually executes each transaction with a `TracingInspector`
+/// to capture full opcode-level traces.
 fn trace_block_with_config<T, W>(
     block: Block,
     public_keys: Vec<UncompressedPublicKey>,
@@ -145,45 +152,89 @@ where
     // Step 4: Create witness database
     let db = WitnessDatabase::new(&trie, bytecode, ancestor_hashes);
 
+    // Step 5: Create state with the database
+    let mut state = State::builder().with_database(db).build();
+
     // Write block start
     writer.write_block_start(&recovered_block)?;
 
-    // Step 5: Execute the block
-    let executor = evm_config.executor(db);
-    let output = executor
-        .execute(&recovered_block)
-        .map_err(|e: reth_evm::execute::BlockExecutionError| {
-            TracedExecutionError::ExecutionFailed(e.to_string())
-        })?;
+    // Step 6: Get EVM environment from block header using ConfigureEvm
+    let evm_env = evm_config.evm_env(recovered_block.header())
+        .expect("failed to create EVM environment");
 
-    // Step 6: Write transaction traces
-    let transactions: Vec<&TransactionSigned> = recovered_block.body().transactions().collect();
-    let receipts: &[EthereumReceipt] = &output.receipts;
+    // Step 7: Execute each transaction with tracing
+    let mut total_gas_used = 0u64;
     let mut all_success = true;
 
-    for (tx_index, (tx, receipt)) in transactions.iter().zip(receipts.iter()).enumerate() {
-        let tx_hash = format!("{:?}", tx.tx_hash());
-        let success = receipt.status();
+    for (tx_index, (sender, tx)) in recovered_block.transactions_with_sender().enumerate() {
+        let tx_hash = tx.tx_hash();
 
-        if !success {
-            all_success = false;
+        // Create tracing inspector with full EIP-3155 config
+        let inspector_config = TracingInspectorConfig::default_geth()
+            .set_memory_snapshots(true)
+            .set_stack_snapshots(StackSnapshotType::Full);
+
+        let mut inspector = TracingInspector::new(inspector_config);
+
+        // Create a recovered transaction for tx_env
+        let recovered_tx = Recovered::new_unchecked(tx.clone(), *sender);
+        
+        // Get transaction environment
+        let tx_env = evm_config.tx_env(&recovered_tx);
+
+        // Build the EVM context with our state
+        let ctx = reth_revm::Context::mainnet()
+            .with_db(&mut state)
+            .with_block(evm_env.block_env.clone())
+            .with_cfg(evm_env.cfg_env.clone());
+
+        // Build and execute EVM with inspector
+        let mut evm = ctx.build_mainnet_with_inspector(&mut inspector);
+
+        let result = reth_revm::ExecuteEvm::transact(&mut evm, tx_env);
+
+        match result {
+            Ok(exec_result_and_state) => {
+                let gas_used = exec_result_and_state.result.gas_used();
+                total_gas_used += gas_used;
+
+                // Get return value from execution result
+                let return_value = exec_result_and_state
+                    .result
+                    .output()
+                    .cloned()
+                    .unwrap_or_default();
+
+                // Build full EIP-3155 trace with structLogs
+                let geth_trace_opts = GethDefaultTracingOptions::default()
+                    .with_enable_memory(true)
+                    .with_disable_stack(false)
+                    .with_disable_storage(false);
+
+                let geth_frame = inspector
+                    .into_geth_builder()
+                    .geth_traces(gas_used, return_value, geth_trace_opts);
+
+                // Convert to GethTrace for output
+                let geth_trace = GethTrace::Default(geth_frame);
+
+                writer.write_transaction_trace(tx_index, &tx_hash, &geth_trace)?;
+
+                // Commit state changes
+                state.commit(exec_result_and_state.state);
+
+                if !exec_result_and_state.result.is_success() {
+                    all_success = false;
+                }
+            }
+            Err(e) => {
+                writer.write_transaction_error(tx_index, &tx_hash, &format!("{e:?}"))?;
+                all_success = false;
+            }
         }
-
-        // Create EIP-3155 compatible trace output
-        let geth_trace = alloy_rpc_types_trace::geth::GethTrace::Default(
-            alloy_rpc_types_trace::geth::DefaultFrame {
-                failed: !success,
-                gas: receipt.cumulative_gas_used(),
-                return_value: alloy_primitives::Bytes::default(),
-                struct_logs: vec![], // Note: Full struct_logs would require inspector integration
-            },
-        );
-
-        writer.write_transaction_trace(tx_index, &tx_hash, &geth_trace)?;
     }
 
     // Write block end
-    let total_gas_used = output.gas_used;
     let tx_count = recovered_block.body().transactions.len();
     writer.write_block_end(total_gas_used, tx_count)?;
     writer.flush()?;

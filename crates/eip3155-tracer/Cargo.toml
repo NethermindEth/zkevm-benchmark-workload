@@ -37,5 +37,8 @@ thiserror.workspace = true
 # Crypto
 k256.workspace = true
 
+# Tracing
+revm-inspectors = { workspace = true, features = ["serde"] }
+
 [lints]
 workspace = true

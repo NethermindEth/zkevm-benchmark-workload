@@ -4,6 +4,7 @@
 //! execution traces in JSONL format.
 
 use alloy_consensus::BlockHeader;
+use alloy_primitives::B256;
 use alloy_rpc_types_trace::geth::GethTrace;
 use reth_ethereum_primitives::Block;
 use reth_primitives_traits::RecoveredBlock;
@@ -120,7 +121,7 @@ impl<W: Write> TraceWriter<W> {
     pub fn write_transaction_trace(
         &mut self,
         tx_index: usize,
-        tx_hash: &str,
+        tx_hash: &B256,
         trace: &GethTrace,
     ) -> std::io::Result<()> {
         #[derive(Serialize)]
@@ -128,14 +129,14 @@ impl<W: Write> TraceWriter<W> {
             #[serde(rename = "type")]
             type_: &'static str,
             tx_index: usize,
-            tx_hash: &'a str,
+            tx_hash: String,
             trace: &'a GethTrace,
         }
 
         let output = TransactionTrace {
             type_: "transaction_trace",
             tx_index,
-            tx_hash,
+            tx_hash: format!("{:?}", tx_hash),
             trace,
         };
         self.write_json(&output)
@@ -145,7 +146,7 @@ impl<W: Write> TraceWriter<W> {
     pub fn write_transaction_error(
         &mut self,
         tx_index: usize,
-        tx_hash: &str,
+        tx_hash: &B256,
         error: &str,
     ) -> std::io::Result<()> {
         #[derive(Serialize)]
@@ -153,14 +154,14 @@ impl<W: Write> TraceWriter<W> {
             #[serde(rename = "type")]
             type_: &'static str,
             tx_index: usize,
-            tx_hash: &'a str,
+            tx_hash: String,
             error: &'a str,
         }
 
         let output = TransactionError {
             type_: "transaction_error",
             tx_index,
-            tx_hash,
+            tx_hash: format!("{:?}", tx_hash),
             error,
         };
         self.write_json(&output)
