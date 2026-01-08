@@ -16,7 +16,7 @@ use witness_generator::StatelessExecutorFixture;
 
 /// Configuration for opcode tracing.
 #[derive(Debug, Clone)]
-pub struct TraceConfig {
+pub(crate) struct TraceConfig {
     /// Include memory snapshots in the trace (increases output size significantly).
     pub include_memory: bool,
     /// Include storage changes in the trace.
@@ -37,36 +37,11 @@ impl Default for TraceConfig {
 
 /// Result of tracing a single fixture.
 #[derive(Debug)]
-pub struct TraceResult {
-    /// Name of the traced fixture.
-    pub name: String,
-    /// Number of transactions traced.
-    pub transaction_count: usize,
+pub(crate) struct TraceResult {
     /// Total gas used across all transactions.
-    pub gas_used: u64,
+    pub(crate) gas_used: u64,
     /// Whether all transactions executed successfully.
-    pub success: bool,
-}
-
-/// Traces all fixtures in a folder, writing output to the specified directory.
-///
-/// Each fixture is traced and output to `{output_folder}/{fixture_name}.jsonl`.
-///
-/// # Arguments
-///
-/// * `input_folder` - Path to folder containing fixture JSON files
-/// * `output_folder` - Path to folder where trace files will be written
-/// * `config` - Configuration for the trace output
-///
-/// # Returns
-///
-/// A vector of trace results for each fixture processed.
-pub fn trace_fixtures_folder(
-    input_folder: &Path,
-    output_folder: &Path,
-    config: &TraceConfig,
-) -> Result<Vec<TraceResult>> {
-    trace_fixtures(input_folder, None, output_folder, config)
+    pub(crate) success: bool,
 }
 
 /// Traces fixtures from either a folder or a single file.
@@ -81,7 +56,7 @@ pub fn trace_fixtures_folder(
 /// # Returns
 ///
 /// A vector of trace results for each fixture processed.
-pub fn trace_fixtures(
+pub(crate) fn trace_fixtures(
     input_folder: &Path,
     input_file: Option<&Path>,
     output_folder: &Path,
@@ -118,8 +93,6 @@ fn trace_single_fixture(
         info!("Skipping {} (trace already exists)", fixture.name);
         // Return a placeholder result - we could also read the existing file
         return Ok(TraceResult {
-            name: fixture.name.clone(),
-            transaction_count: fixture.stateless_input.block.body.transactions.len(),
             gas_used: 0,
             success: true,
         });
@@ -159,8 +132,6 @@ fn trace_single_fixture(
     );
 
     Ok(TraceResult {
-        name: fixture.name.clone(),
-        transaction_count: result.transaction_count,
         gas_used: result.gas_used,
         success: result.success,
     })

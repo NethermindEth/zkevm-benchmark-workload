@@ -5,6 +5,7 @@ members = [
     "crates/witness-generator-cli",
     "crates/ere-hosts",
     "crates/eip3155-tracer",
+    "crates/eip3155-tracer-cli",
     "ere-guests/libs",
     "ere-guests/block-encoding-length/guest",
     "ere-guests/stateless-validator/reth/guest",

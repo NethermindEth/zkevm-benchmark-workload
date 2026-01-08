@@ -23,7 +23,7 @@ pub struct Cli {
     #[arg(short, long, value_enum, default_value = "execute")]
     pub action: BenchmarkAction,
 
-    /// zkVM instances to benchmark (not required for trace-only action)
+    /// zkVM instances to benchmark
     #[arg(long, value_parser = <zkVMKind as std::str::FromStr>::from_str)]
     pub zkvms: Vec<zkVMKind>,
 
@@ -42,14 +42,6 @@ pub struct Cli {
     /// Output folder for dumping input files used in benchmarks
     #[arg(long)]
     pub dump_inputs: Option<PathBuf>,
-
-    /// Enable opcode-level tracing during execution
-    #[arg(long, default_value_t = false)]
-    pub trace_opcode: bool,
-
-    /// Output folder for opcode traces
-    #[arg(long, default_value = "zkevm-fixtures-traces")]
-    pub trace_output: PathBuf,
 }
 
 /// Subcommands for different guest programs
@@ -174,8 +166,6 @@ pub enum BenchmarkAction {
     Execute,
     /// Create a zkVM proof
     Prove,
-    /// Only generate opcode traces (no zkVM execution)
-    TraceOnly,
 }
 
 impl From<Resource> for ProverResourceType {
@@ -194,9 +184,6 @@ impl From<BenchmarkAction> for benchmark_runner::runner::Action {
         match action {
             BenchmarkAction::Execute => Self::Execute,
             BenchmarkAction::Prove => Self::Prove,
-            BenchmarkAction::TraceOnly => {
-                panic!("TraceOnly action should not be converted to runner::Action")
-            }
         }
     }
 }

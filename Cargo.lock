@@ -1405,7 +1405,6 @@ dependencies = [
  "anyhow",
  "auto_impl",
  "block-encoding-length-guest",
- "eip3155-tracer",
  "ere-dockerized",
  "ere-io",
  "ere-platform-trait",
@@ -2716,6 +2715,22 @@ dependencies = [
  "serde_json",
  "sparsestate",
  "thiserror 2.0.17",
+]
+
+[[package]]
+name = "eip3155-tracer-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "eip3155-tracer",
+ "guest-libs",
+ "rayon",
+ "serde_json",
+ "tracing",
+ "tracing-subscriber 0.3.22",
+ "walkdir",
+ "witness-generator",
 ]
 
 [[package]]

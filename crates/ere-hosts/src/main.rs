@@ -7,7 +7,6 @@ use benchmark_runner::{
     block_encoding_length_program, empty_program,
     runner::{Action, RunConfig, get_zkvm_instances, run_benchmark},
     stateless_executor, stateless_validator,
-    tracer::{TraceConfig, trace_fixtures},
 };
 
 use clap::Parser;
@@ -18,7 +17,7 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 use crate::cli::{
-    BenchmarkAction, Cli, GuestProgramCommand, Resource, StatelessExecutorClient,
+    Cli, GuestProgramCommand, Resource, StatelessExecutorClient,
     StatelessValidatorClient,
 };
 
@@ -31,14 +30,9 @@ fn main() -> Result<()> {
 
     let cli = Cli::parse();
 
-    // Handle trace-only action separately (no zkVM required)
-    if cli.action == BenchmarkAction::TraceOnly {
-        return run_trace_only(&cli);
-    }
-
-    // Validate that zkVMs are specified for non-trace-only actions
+    // Validate that zkVMs are specified
     if cli.zkvms.is_empty() {
-        bail!("At least one zkVM must be specified with --zkvms for execute/prove actions");
+        bail!("At least one zkVM must be specified with --zkvms");
     }
 
     // Validate that network proving is only used with SP1
@@ -67,11 +61,6 @@ fn main() -> Result<()> {
                 "Running stateless-executor benchmark for input: {}",
                 input_display.display()
             );
-
-            // Run opcode tracing if requested
-            if cli.trace_opcode {
-                run_opcode_tracing(&input_folder, input_file.as_deref(), &cli.trace_output)?;
-            }
 
             let el = execution_client.into();
             let guest_io = stateless_executor::stateless_executor_inputs_from(
@@ -112,11 +101,6 @@ fn main() -> Result<()> {
                 input_display.display()
             );
 
-            // Run opcode tracing if requested
-            if cli.trace_opcode {
-                run_opcode_tracing(&input_folder, input_file.as_deref(), &cli.trace_output)?;
-            }
-
             let el = execution_client.into();
             let guest_io = stateless_validator::stateless_validator_inputs_from(
                 input_folder.as_path(),
@@ -146,9 +130,6 @@ fn main() -> Result<()> {
             }
         }
         GuestProgramCommand::EmptyProgram => {
-            if cli.trace_opcode {
-                bail!("Opcode tracing is not supported for empty-program");
-            }
             info!("Running empty-program benchmarks");
             let guest_io = empty_program::empty_program_input()
                 .context("Failed to create empty program input")?;
@@ -175,9 +156,6 @@ fn main() -> Result<()> {
             loop_count,
             format,
         } => {
-            if cli.trace_opcode {
-                bail!("Opcode tracing is not supported for block-encoding-length");
-            }
             info!(
                 "Running {:?}-encoding-length benchmarks for input folder {} and loop count {}",
                 format,
@@ -208,60 +186,6 @@ fn main() -> Result<()> {
             }
         }
     }
-
-    Ok(())
-}
-
-/// Handles the trace-only action (no zkVM execution).
-fn run_trace_only(cli: &Cli) -> Result<()> {
-    match &cli.guest_program {
-        GuestProgramCommand::StatelessExecutor {
-            input_folder,
-            input_file,
-            ..
-        }
-        | GuestProgramCommand::StatelessValidator {
-            input_folder,
-            input_file,
-            ..
-        } => {
-            let input_display = input_file.as_ref().unwrap_or(input_folder);
-            info!(
-                "Running trace-only for input: {}",
-                input_display.display()
-            );
-            run_opcode_tracing(input_folder, input_file.as_deref(), &cli.trace_output)?;
-            Ok(())
-        }
-        GuestProgramCommand::EmptyProgram => {
-            bail!("trace-only action is not supported for empty-program")
-        }
-        GuestProgramCommand::BlockEncodingLength { .. } => {
-            bail!("trace-only action is not supported for block-encoding-length")
-        }
-    }
-}
-
-/// Runs opcode-level tracing on fixtures.
-fn run_opcode_tracing(
-    input_folder: &Path,
-    input_file: Option<&Path>,
-    output_folder: &Path,
-) -> Result<()> {
-    info!("Running opcode tracing, output to: {}", output_folder.display());
-
-    let config = TraceConfig::default();
-    let results = trace_fixtures(input_folder, input_file, output_folder, &config)?;
-
-    let success_count = results.iter().filter(|r| r.success).count();
-    let total_gas: u64 = results.iter().map(|r| r.gas_used).sum();
-
-    info!(
-        "Tracing complete: {} fixtures traced, {} succeeded, {} total gas",
-        results.len(),
-        success_count,
-        total_gas
-    );
 
     Ok(())
 }
