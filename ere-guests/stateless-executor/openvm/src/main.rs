@@ -3,6 +3,8 @@
 use ere_platform_openvm::OpenVMPlatform;
 use reth_stateless_executor::guest::{Guest, RethStatelessExecutorGuest};
 
+mod openvm_revm_crypto;
+
 openvm::init!();
 
 /// Entry point.
