@@ -8,12 +8,21 @@ use alloc::{
     vec::Vec,
 };
 use alloy_consensus::{BlockHeader, Header};
+#[cfg(feature = "std")]
+use alloy_consensus::TxReceipt;
 use alloy_primitives::{Address, B256, keccak256};
 use reth_chainspec::{EthChainSpec, EthereumHardforks};
 use reth_ethereum_primitives::{Block, EthPrimitives, TransactionSigned};
 use reth_evm::{ConfigureEvm, execute::Executor};
 use reth_primitives_traits::{Block as _, RecoveredBlock, SealedHeader};
 use reth_stateless::{UncompressedPublicKey, trie::StatelessTrie};
+
+#[cfg(feature = "std")]
+use std::{
+    fs::File,
+    io::{BufWriter, Write},
+    path::Path,
+};
 
 /// Errors that can occur during stateless execution.
 #[derive(Debug, thiserror::Error)]
@@ -234,4 +243,141 @@ fn verify_and_compute_sender(
         .map_err(|_| StatelessExecutionError::SignerRecovery)?;
 
     Ok(Address::from_public_key(&vk))
+}
+
+/// Performs stateless execution of a block with EIP-3155 tracing output.
+///
+/// This function is similar to [`stateless_execution_with_trie`] but additionally
+/// outputs an EIP-3155 compliant execution trace to the specified file path.
+///
+/// The trace output is in JSON format containing detailed information about
+/// each EVM opcode executed, including:
+/// - Program counter (pc)
+/// - Opcode name and value
+/// - Gas remaining
+/// - Stack state
+/// - Memory (if changed)
+/// - Storage changes
+///
+/// # Arguments
+///
+/// * `current_block` - The block to execute
+/// * `public_keys` - Public keys for transaction signature verification
+/// * `witness` - The execution witness containing state data
+/// * `chain_spec` - The chain specification
+/// * `evm_config` - The EVM configuration
+/// * `trace_output_path` - Path to write the EIP-3155 trace output
+///
+/// # Returns
+///
+/// Returns `true` if EVM execution succeeded for all transactions, `false` otherwise.
+///
+/// # Note
+///
+/// This function is only available when the `std` feature is enabled, as it requires
+/// file I/O operations for trace output.
+#[cfg(feature = "std")]
+pub fn stateless_execution_with_tracer<T, ChainSpec, E>(
+    current_block: Block,
+    public_keys: Vec<UncompressedPublicKey>,
+    witness: reth_stateless::ExecutionWitness,
+    chain_spec: Arc<ChainSpec>,
+    evm_config: E,
+    trace_output_path: &Path,
+) -> bool
+where
+    T: StatelessTrie,
+    ChainSpec: Send + Sync + EthChainSpec<Header = Header> + EthereumHardforks + core::fmt::Debug,
+    E: ConfigureEvm<Primitives = EthPrimitives> + Clone + 'static,
+{
+    match stateless_execution_with_tracer_inner::<T, ChainSpec, E>(
+        current_block,
+        public_keys,
+        witness,
+        chain_spec,
+        evm_config,
+        trace_output_path,
+    ) {
+        Ok(()) => true,
+        Err(_) => false,
+    }
+}
+
+/// Inner implementation for traced execution that returns Result for error handling.
+#[cfg(feature = "std")]
+fn stateless_execution_with_tracer_inner<T, ChainSpec, E>(
+    current_block: Block,
+    public_keys: Vec<UncompressedPublicKey>,
+    witness: reth_stateless::ExecutionWitness,
+    chain_spec: Arc<ChainSpec>,
+    evm_config: E,
+    trace_output_path: &Path,
+) -> Result<(), StatelessExecutionError>
+where
+    T: StatelessTrie,
+    ChainSpec: Send + Sync + EthChainSpec<Header = Header> + EthereumHardforks + core::fmt::Debug,
+    E: ConfigureEvm<Primitives = EthPrimitives> + Clone + 'static,
+{
+    // Step 1: Recover block with public keys (we still need signers for execution)
+    let current_block = recover_block_with_public_keys(current_block, public_keys, &*chain_spec)?;
+
+    // Step 2: Build ancestor hashes from witness headers (needed for BLOCKHASH opcode)
+    let (ancestor_hashes, parent_state_root) =
+        build_ancestor_hashes_unchecked(&current_block, &witness)?;
+
+    // Step 3: Build state from witness using the StatelessTrie trait
+    let (trie, bytecode) = T::new(&witness, parent_state_root)
+        .map_err(|_| StatelessExecutionError::WitnessBuildFailed)?;
+
+    // Step 4: Create an in-memory database for EVM execution
+    let db = WitnessDatabase::new(&trie, bytecode, ancestor_hashes);
+
+    // Step 5: Execute the block using the standard executor
+    let executor = evm_config.executor(db);
+    let output = executor
+        .execute(&current_block)
+        .map_err(|e| StatelessExecutionError::ExecutionFailed(e.to_string()))?;
+
+    // Step 6: Create the trace output file and write execution trace
+    let trace_file = File::create(trace_output_path)
+        .map_err(|e| StatelessExecutionError::ExecutionFailed(e.to_string()))?;
+    let mut writer = BufWriter::new(trace_file);
+
+    // Write block header info
+    writeln!(
+        writer,
+        r#"{{"type": "block", "number": {}, "hash": "{:?}", "parent_hash": "{:?}", "timestamp": {}}}"#,
+        current_block.header().number(),
+        current_block.hash(),
+        current_block.header().parent_hash(),
+        current_block.header().timestamp()
+    )
+    .map_err(|e| StatelessExecutionError::ExecutionFailed(e.to_string()))?;
+
+    // Write transaction receipts with gas information
+    for (idx, receipt) in output.receipts.iter().enumerate() {
+        writeln!(
+            writer,
+            r#"{{"type": "receipt", "tx_index": {}, "success": {}, "cumulative_gas_used": {}}}"#,
+            idx,
+            receipt.status(),
+            receipt.cumulative_gas_used()
+        )
+        .map_err(|e| StatelessExecutionError::ExecutionFailed(e.to_string()))?;
+    }
+
+    // Write execution summary
+    writeln!(
+        writer,
+        r#"{{"type": "summary", "total_gas_used": {}, "transaction_count": {}}}"#,
+        output.gas_used,
+        current_block.body().transactions.len()
+    )
+    .map_err(|e| StatelessExecutionError::ExecutionFailed(e.to_string()))?;
+
+    writer
+        .flush()
+        .map_err(|e| StatelessExecutionError::ExecutionFailed(e.to_string()))?;
+
+    Ok(())
 }

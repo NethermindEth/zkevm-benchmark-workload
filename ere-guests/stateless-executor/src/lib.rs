@@ -24,9 +24,12 @@
     html_favicon_url = "https://avatars0.githubusercontent.com/u/97369466?s=256"
 )]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
 
 mod execution;
 /// Guest program implementation for zkVMs.
@@ -34,6 +37,9 @@ pub mod guest;
 mod witness_db;
 
 pub use execution::{StatelessExecutionError, stateless_execution_with_trie};
+
+#[cfg(feature = "std")]
+pub use execution::stateless_execution_with_tracer;
 
 // Re-export types that users will need
 pub use reth_stateless::{ExecutionWitness, Genesis, StatelessInput, UncompressedPublicKey};
