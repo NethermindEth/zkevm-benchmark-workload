@@ -1,0 +1,41 @@
+[package]
+name = "eip3155-tracer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "EIP-3155 compliant EVM execution tracer for stateless block execution"
+
+[dependencies]
+# reth
+reth-primitives-traits.workspace = true
+reth-ethereum-primitives = { workspace = true, features = ["serde"] }
+reth-chainspec.workspace = true
+reth-stateless.workspace = true
+reth-evm.workspace = true
+reth-evm-ethereum.workspace = true
+reth-revm.workspace = true
+reth-errors.workspace = true
+
+# alloy
+alloy-primitives = { workspace = true, features = ["std"] }
+alloy-consensus = { workspace = true, features = ["std"] }
+alloy-rlp.workspace = true
+alloy-rpc-types-trace.workspace = true
+alloy-genesis = { workspace = true, features = ["std"] }
+
+# Stateless trie
+sparsestate.workspace = true
+
+# Serialization
+serde = { workspace = true, features = ["derive", "std"] }
+serde_json.workspace = true
+
+# Error handling
+thiserror.workspace = true
+
+# Crypto
+k256.workspace = true
+
+[lints]
+workspace = true

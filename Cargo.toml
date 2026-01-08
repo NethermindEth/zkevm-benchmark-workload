@@ -4,6 +4,7 @@ members = [
     "crates/witness-generator",
     "crates/witness-generator-cli",
     "crates/ere-hosts",
+    "crates/eip3155-tracer",
     "ere-guests/libs",
     "ere-guests/block-encoding-length/guest",
     "ere-guests/stateless-validator/reth/guest",
@@ -113,6 +114,7 @@ guest-libs = { path = "ere-guests/libs" }
 block-encoding-length-guest = { path = "ere-guests/block-encoding-length/guest" }
 reth-guest = { path = "ere-guests/stateless-validator/reth/guest" }
 reth-stateless-executor = { path = "ere-guests/stateless-executor" }
+eip3155-tracer = { path = "crates/eip3155-tracer" }
 ethrex-guest = { path = "ere-guests/stateless-validator/ethrex/guest" }
 
 # ere
@@ -157,6 +159,9 @@ ethereum_ssz_derive = "0.9"
 ethereum_ssz = "0.9"
 
 revm-bytecode = { version = "7.1.1", default-features = false }
+revm-inspectors = { version = "0.33.2", default-features = false }
+
+alloy-rpc-types-trace = "1.1.2"
 
 k256 = { version = "0.13", default-features = false }
 

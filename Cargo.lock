@@ -2693,6 +2693,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "eip3155-tracer"
+version = "0.1.0"
+dependencies = [
+ "alloy-consensus",
+ "alloy-genesis",
+ "alloy-primitives",
+ "alloy-rlp",
+ "alloy-rpc-types-trace",
+ "k256",
+ "reth-chainspec",
+ "reth-errors",
+ "reth-ethereum-primitives",
+ "reth-evm",
+ "reth-evm-ethereum",
+ "reth-primitives-traits",
+ "reth-revm",
+ "reth-stateless",
+ "serde",
+ "serde_json",
+ "sparsestate",
+ "thiserror 2.0.17",
+]
+
+[[package]]
 name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
