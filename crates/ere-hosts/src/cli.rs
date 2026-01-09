@@ -3,10 +3,10 @@
 use std::{path::PathBuf, str::FromStr};
 
 use anyhow::Result;
-use benchmark_runner::{runner::Action, stateless_validator};
+use benchmark_runner::{stateless_executor, stateless_validator};
 use clap::{Parser, Subcommand, ValueEnum};
 use ere_dockerized::zkVMKind;
-use ere_zkvm_interface::ProverResourceType;
+use ere_zkvm_interface::{ClusterProverConfig, NetworkProverConfig, ProverResourceType};
 
 /// Command line interface for the zkVM benchmarker
 #[derive(Parser)]
@@ -47,14 +47,39 @@ pub struct Cli {
 /// Subcommands for different guest programs
 #[derive(Subcommand, Clone, Debug)]
 pub enum GuestProgramCommand {
+    /// Ethereum Stateless Executor
+    StatelessExecutor {
+        /// Input folder for benchmark fixtures
+        #[arg(
+            short,
+            long,
+            default_value = "zkevm-fixtures-input",
+            conflicts_with = "input_file"
+        )]
+        input_folder: PathBuf,
+        /// Input file for a single benchmark fixture
+        #[arg(long)]
+        input_file: Option<PathBuf>,
+        /// Execution client to benchmark
+        #[arg(short, long, value_enum, default_value = "reth")]
+        execution_client: StatelessExecutorClient,
+    },
     /// Ethereum Stateless Validator
     StatelessValidator {
         /// Input folder for benchmark fixtures
-        #[arg(short, long, default_value = "zkevm-fixtures-input")]
+        #[arg(
+            short,
+            long,
+            default_value = "zkevm-fixtures-input",
+            conflicts_with = "input_file"
+        )]
         input_folder: PathBuf,
+        /// Input file for a single benchmark fixture
+        #[arg(long)]
+        input_file: Option<PathBuf>,
         /// Execution client to benchmark
         #[arg(short, long)]
-        execution_client: ExecutionClient,
+        execution_client: StatelessValidatorClient,
     },
     /// Empty program
     EmptyProgram,
@@ -84,16 +109,33 @@ pub enum BlockEncodingFormat {
     Ssz,
 }
 
+/// Execution clients for the stateless executor
+#[derive(Debug, Copy, Clone, ValueEnum)]
+pub enum StatelessExecutorClient {
+    /// Reth execution client
+    Reth,
+}
+
+impl StatelessExecutorClient {
+    /// Get the guest relative path for the execution client
+    pub fn guest_rel_path(&self) -> Result<PathBuf> {
+        let path = match self {
+            Self::Reth => "stateless-executor",
+        };
+        Ok(PathBuf::from_str(path).unwrap())
+    }
+}
+
 /// Execution clients for the stateless validator
 #[derive(Debug, Copy, Clone, ValueEnum)]
-pub enum ExecutionClient {
+pub enum StatelessValidatorClient {
     /// Reth execution client
     Reth,
     /// Ethrex execution client
     Ethrex,
 }
 
-impl ExecutionClient {
+impl StatelessValidatorClient {
     /// Get the guest relative path for the execution client
     pub fn guest_rel_path(&self) -> Result<PathBuf> {
         let path = match self {
@@ -111,6 +153,10 @@ pub enum Resource {
     Cpu,
     /// GPU resource
     Gpu,
+    /// Network resource (SP1 only, requires `NETWORK_PRIVATE_KEY` env var)
+    Network,
+    /// SP1 cluster resource
+    Cluster,
 }
 
 /// Benchmark actions
@@ -127,11 +173,13 @@ impl From<Resource> for ProverResourceType {
         match resource {
             Resource::Cpu => Self::Cpu,
             Resource::Gpu => Self::Gpu,
+            Resource::Network => Self::Network(NetworkProverConfig::default()),
+            Resource::Cluster => Self::Cluster(ClusterProverConfig::default()),
         }
     }
 }
 
-impl From<BenchmarkAction> for Action {
+impl From<BenchmarkAction> for benchmark_runner::runner::Action {
     fn from(action: BenchmarkAction) -> Self {
         match action {
             BenchmarkAction::Execute => Self::Execute,
@@ -149,11 +197,19 @@ impl From<BlockEncodingFormat> for block_encoding_length_guest::guest::BlockEnco
     }
 }
 
-impl From<ExecutionClient> for stateless_validator::ExecutionClient {
-    fn from(client: ExecutionClient) -> Self {
+impl From<StatelessExecutorClient> for stateless_executor::ExecutionClient {
+    fn from(client: StatelessExecutorClient) -> Self {
         match client {
-            ExecutionClient::Reth => Self::Reth,
-            ExecutionClient::Ethrex => Self::Ethrex,
+            StatelessExecutorClient::Reth => Self::Reth,
+        }
+    }
+}
+
+impl From<StatelessValidatorClient> for stateless_validator::ExecutionClient {
+    fn from(client: StatelessValidatorClient) -> Self {
+        match client {
+            StatelessValidatorClient::Reth => Self::Reth,
+            StatelessValidatorClient::Ethrex => Self::Ethrex,
         }
     }
 }

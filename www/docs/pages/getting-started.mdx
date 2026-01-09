@@ -1,0 +1,124 @@
+# Getting Started
+
+Welcome to the zkGas profiling documentation! This guide will help you understand the project structure and get started with profiling the resources needed for proving different OPCODEs in zk environments.
+
+:::tip[Complete Guide Available]
+For a comprehensive walkthrough of running benchmarks with the stateless-executor, including detailed script documentation, troubleshooting, and automation tips, see the **[Stateless Executor Guide](/stateless-executor-guide)**.
+:::
+
+## Project Overview
+
+zkGas profiling is a comprehensive framework for measuring and comparing the resources needed for proving different OPCODEs in zk environments. The project focuses on analyzing the computational costs, memory usage, and proving time required for various Ethereum opcodes across different gas categories and zkVM implementations. The stateless-executor guest program reduces the re-execution of an ethereum block and witness to the transaction level without the pre and post execution validation overhead. This makes the proving resources as close to the actual execution of the instructions as possible. 
+
+## Key Features
+
+- **OPCODE Profiling**: Detailed analysis of resource requirements for different Ethereum opcodes
+- **Gas-Categorized Analysis**: Organize profiling data by gas limits (1M, 10M, 30M, 45M, 60M, 100M, 150M)
+- **Multi-zkVM Support**: Compare opcode costs across RISC0, SP1, OpenVM, Pico, Zisk, and Airbender zkVMs
+- **Resource Metrics**: Comprehensive measurement of cycles, memory usage, and proving time
+- **Automated Workflows**: Scripts for fixture download, generation, profiling execution, and results analysis
+- **Docker-Based Compilation**: All zkVMs use EreDockerized for consistent builds
+
+## Choosing the Right Guest Program
+
+| Guest Program | Best For | Execution Clients |
+|---------------|----------|-------------------|
+| `stateless-executor` | Pure EVM opcode benchmarking, execution research | Reth only |
+| `stateless-validator` | Realistic block validation costs, production estimates | Reth, Ethrex |
+| `empty-program` | zkVM baseline overhead measurement | N/A |
+
+:::tip[Quick Decision]
+- **Measuring opcode costs?** → Use `stateless-executor`
+- **Estimating proving costs?** → Use `stateless-validator`
+- See [Executor vs Validator](/executor-vs-validator) for detailed comparison.
+:::
+
+## Quick Start
+
+### Prerequisites
+
+Ensure you have Docker, Rust (1.70+), Python 3.8+, and Git installed before proceeding.
+
+### 4-Step Workflow
+
+1. **Clone and Setup the Repository**
+
+```bash
+git clone https://github.com/NethermindEth/zkevm-benchmark-workload.git
+cd zkevm-benchmark-workload
+```
+
+2. **Download and Extract Fixtures**
+
+```bash
+./scripts/download-and-extract-fixtures.sh
+```
+
+3. **Generate Gas-Categorized Fixtures**
+
+```bash
+./scripts/generate-gas-categorized-fixtures.sh
+```
+
+4. **Run Benchmarks**
+
+```bash
+# Run with defaults (risc0 zkVM, reth client, GPU)
+./scripts/run-gas-categorized-benchmarks.sh
+
+# Or customize your run
+./scripts/run-gas-categorized-benchmarks.sh -z sp1 -e reth -c 1M,10M
+```
+
+
+### Default Configuration
+
+| Setting | Default Value |
+|---------|---------------|
+| zkVM | risc0 |
+| Execution Client | reth |
+| Resource | gpu |
+| Gas Categories | 1M, 10M, 30M, 45M, 60M, 100M, 150M |
+| Action | prove |
+
+## Project Structure
+
+```
+zkGas-profiling/
+├── scripts/                    # Automation scripts
+├── crates/                     # Core Rust crates
+├── ere-guests/                 # zkVM guest programs
+├── zkevm-fixtures-input-*/     # Generated test fixtures
+├── zkevm-metrics-*/           # Raw profiling results
+├── benchmark-results/          # Organized results and analysis reports
+└── www/                       # Documentation website
+```
+
+## Results Organization
+
+The `benchmark-results/` directory provides organized access to profiling results:
+
+- **`gas-categorized/`**: Results organized by gas categories (1M, 10M, 30M, etc.)
+- **`zkvm-comparisons/`**: Results organized by zkVM implementations (RISC0, SP1, etc.)
+- **`markdown-reports/`**: Human-readable analysis reports and comparisons
+- **`archived/`**: Historical results for long-term analysis
+
+## Next Steps
+
+### Comprehensive Guides
+
+- **[Stateless Executor Guide](/stateless-executor-guide)** - Complete guide with TLDR, scripts reference, troubleshooting, and automation best practices
+
+### Workflow Documentation
+
+- [Download Fixtures](/download-fixtures) - Download EEST test fixtures
+- [Gas Categorized Fixtures](/gas-categorized-fixtures) - Generate test fixtures by gas category
+- [Gas Categorized Benchmarks](/gas-categorized-benchmarks) - Run benchmarks across gas categories
+
+### Analysis & Reporting
+
+- [Scripts](/scripts) - Comprehensive documentation for all automation scripts
+
+### Reference
+
+- [Benchmark Results](/benchmark-results) - View and organize generated profiling results

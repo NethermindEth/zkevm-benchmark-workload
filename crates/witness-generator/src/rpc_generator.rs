@@ -489,27 +489,37 @@ mod test {
     use super::*;
 
     fn build_base_rpc() -> RpcBlocksAndWitnessesBuilder {
-        let rpc_url = std::env::var("RPC_URL").expect("RPC_URL not set");
+        let rpc_url = get_valid_rpc_url().expect("RPC_URL not set or empty");
         let rpc_headers = std::env::var("RPC_HEADERS").ok();
 
         let mut builder = RpcBlocksAndWitnessesBuilder::new(rpc_url);
         if let Some(rpc_headers) = rpc_headers {
-            let rpc_headers: RpcFlatHeaderKeyValues = RpcFlatHeaderKeyValues::new(
-                rpc_headers
-                    .split(',')
-                    .map(|s| s.to_string())
-                    .collect::<Vec<String>>(),
-            );
-            builder =
-                builder.with_headers(rpc_headers.try_into().expect("Failed to parse headers"));
+            let headers: Vec<String> = rpc_headers
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+            if !headers.is_empty() {
+                let rpc_headers = RpcFlatHeaderKeyValues::new(headers);
+                builder =
+                    builder.with_headers(rpc_headers.try_into().expect("Failed to parse headers"));
+            }
         }
         builder
     }
 
+    /// Returns a valid RPC URL if `RPC_URL` env var is set and non-empty, None otherwise.
+    fn get_valid_rpc_url() -> Option<String> {
+        match std::env::var("RPC_URL") {
+            Ok(url) if !url.trim().is_empty() => Some(url),
+            _ => None,
+        }
+    }
+
     #[tokio::test]
     async fn test_last_n_blocks() {
-        if std::env::var("RPC_URL").is_err() {
-            eprintln!("skipping test: set RPC_URL to run this test");
+        if get_valid_rpc_url().is_none() {
+            eprintln!("skipping test: set RPC_URL to a valid URL to run this test");
             return;
         }
 
@@ -546,8 +556,8 @@ mod test {
 
     #[tokio::test]
     async fn test_concrete_block_num() {
-        if std::env::var("RPC_URL").is_err() {
-            eprintln!("skipping test: set RPC_URL to run this test");
+        if get_valid_rpc_url().is_none() {
+            eprintln!("skipping test: set RPC_URL to a valid URL to run this test");
             return;
         }
 
@@ -610,8 +620,8 @@ mod test {
 
     #[tokio::test]
     async fn test_live_blocks() {
-        if std::env::var("RPC_URL").is_err() {
-            eprintln!("skipping test: set RPC_URL to run this test");
+        if get_valid_rpc_url().is_none() {
+            eprintln!("skipping test: set RPC_URL to a valid URL to run this test");
             return;
         }
 

@@ -210,6 +210,8 @@ pub struct StatelessValidationFixture {
     /// Whether the stateless block validation is successful.
     pub success: bool,
 }
+/// A stateless executor fixture containing block data and witness information.
+pub type StatelessExecutorFixture = StatelessValidationFixture;
 
 impl StatelessValidationFixture {
     /// Serializes fixtures to a pretty-printed JSON string.
@@ -237,6 +239,15 @@ impl StatelessValidationFixture {
             source: e,
         })?;
         Self::from_json(&contents)
+    }
+
+    /// Creates a new valid fixture from stateless input and a name.
+    pub fn from_stateless_input(input: &StatelessInput, name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            stateless_input: input.clone(),
+            success: true,
+        }
     }
 }
 

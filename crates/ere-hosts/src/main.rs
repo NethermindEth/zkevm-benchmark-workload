@@ -2,20 +2,23 @@
 
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use benchmark_runner::{
     block_encoding_length_program, empty_program,
     runner::{Action, RunConfig, get_zkvm_instances, run_benchmark},
-    stateless_validator::{self},
+    stateless_executor, stateless_validator,
 };
 
 use clap::Parser;
+use ere_dockerized::zkVMKind;
 use ere_zkvm_interface::ProverResourceType;
 use std::path::{Path, PathBuf};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
-use crate::cli::{Cli, ExecutionClient, GuestProgramCommand};
+use crate::cli::{
+    Cli, GuestProgramCommand, Resource, StatelessExecutorClient, StatelessValidatorClient,
+};
 
 pub mod cli;
 
@@ -26,6 +29,13 @@ fn main() -> Result<()> {
 
     let cli = Cli::parse();
 
+    // Validate that network proving is only used with SP1
+    if matches!(cli.resource, Resource::Network | Resource::Cluster)
+        && cli.zkvms.iter().any(|z| *z != zkVMKind::SP1)
+    {
+        bail!("Network or cluster proving is only supported for SP1. Use --zkvms sp1");
+    }
+
     let resource: ProverResourceType = cli.resource.into();
     let action: Action = cli.action.into();
     info!(
@@ -35,21 +45,64 @@ fn main() -> Result<()> {
 
     let workspace_dir = workspace_root().join("ere-guests");
     match cli.guest_program {
-        GuestProgramCommand::StatelessValidator {
+        GuestProgramCommand::StatelessExecutor {
             input_folder,
+            input_file,
             execution_client,
         } => {
+            let input_display = input_file.as_ref().unwrap_or(&input_folder);
             info!(
-                "Running stateless-validator benchmark for input folder: {}",
-                input_folder.display()
+                "Running stateless-executor benchmark for input: {}",
+                input_display.display()
             );
             let el = execution_client.into();
-            let guest_io =
-                stateless_validator::stateless_validator_inputs(input_folder.as_path(), el)?;
+            let guest_io = stateless_executor::stateless_executor_inputs_from(
+                input_folder.as_path(),
+                input_file.as_deref(),
+                el,
+            )?;
             let guest_relative = execution_client
                 .guest_rel_path()
                 .context("Failed to get guest relative path")?;
-            let apply_patches = matches!(execution_client, ExecutionClient::Reth);
+            let apply_patches = matches!(execution_client, StatelessExecutorClient::Reth);
+            let zkvms = get_zkvm_instances(
+                &cli.zkvms,
+                &workspace_dir,
+                &guest_relative,
+                resource,
+                apply_patches,
+            )?;
+            let config = RunConfig {
+                output_folder: cli.output_folder,
+                sub_folder: Some(el.as_ref().to_lowercase()),
+                action,
+                force_rerun: cli.force_rerun,
+                dump_inputs_folder: cli.dump_inputs.clone(),
+            };
+            for zkvm in zkvms {
+                run_benchmark(&zkvm, &config, &guest_io)?;
+            }
+        }
+        GuestProgramCommand::StatelessValidator {
+            input_folder,
+            input_file,
+            execution_client,
+        } => {
+            let input_display = input_file.as_ref().unwrap_or(&input_folder);
+            info!(
+                "Running stateless-validator benchmark for input: {}",
+                input_display.display()
+            );
+            let el = execution_client.into();
+            let guest_io = stateless_validator::stateless_validator_inputs_from(
+                input_folder.as_path(),
+                input_file.as_deref(),
+                el,
+            )?;
+            let guest_relative = execution_client
+                .guest_rel_path()
+                .context("Failed to get guest relative path")?;
+            let apply_patches = matches!(execution_client, StatelessValidatorClient::Reth);
             let zkvms = get_zkvm_instances(
                 &cli.zkvms,
                 &workspace_dir,

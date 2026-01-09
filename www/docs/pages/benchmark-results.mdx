@@ -1,0 +1,239 @@
+# Benchmark Results
+
+This page displays the generated benchmark results from zkGas profiling. Here you can view, analyze, and compare OPCODE resource requirements across different gas categories and zkVM implementations.
+
+## Current Results
+
+*No benchmark results available yet. Run the profiling scripts to generate results.*
+
+### How to Generate Results
+
+1. **Generate Fixtures**:
+   ```bash
+   ./scripts/generate-gas-categorized-fixtures.sh
+   ```
+
+2. **Run Profiling**:
+   ```bash
+   ./scripts/run-gas-categorized-benchmarks.sh
+   ```
+
+3. **Compare Results**:
+   ```bash
+   python3 scripts/compare_executions.py zkevm-metrics-risc0-1M zkevm-metrics-sp1-1M
+   python3 scripts/compare_provings.py zkevm-metrics-risc0-1M zkevm-metrics-sp1-1M
+   ```
+
+## Results Display
+
+Once results are generated, they will be displayed here in organized sections:
+
+### Gas Category Analysis
+Results will be organized by gas categories (1M, 10M, 30M, 45M, 60M, 100M, 500M) showing:
+- Execution cycles and duration
+- Proving time and memory usage
+- Resource efficiency metrics
+
+### zkVM Implementation Comparison
+Side-by-side comparison of different zkVM implementations (RISC0, SP1, OpenVM, Pico, Zisk) showing:
+- Performance differences
+- Resource usage patterns
+- Optimization opportunities
+
+### Statistical Analysis
+Comprehensive statistical analysis including:
+- Mean, median, and standard deviation
+- Performance ranges and distributions
+- Correlation analysis between metrics
+
+## Directory Structure
+
+```
+benchmark-results/
+├── README.md                           # Main documentation
+├── gas-categorized/                    # Results organized by gas categories
+│   ├── 1M/                            # 1 million gas limit results
+│   ├── 10M/                           # 10 million gas limit results
+│   ├── 30M/                           # 30 million gas limit results
+│   ├── 45M/                           # 45 million gas limit results
+│   ├── 60M/                           # 60 million gas limit results
+│   ├── 100M/                          # 100 million gas limit results
+│   └── 500M/                          # 500 million gas limit results
+├── zkvm-comparisons/                   # Results organized by zkVM implementations
+│   ├── risc0/                         # RISC0 zkVM results
+│   ├── sp1/                           # SP1 zkVM results
+│   ├── openvm/                        # OpenVM zkVM results
+│   ├── pico/                          # Pico zkVM results
+│   └── zisk/                          # Zisk zkVM results
+├── execution-clients/                  # Results organized by execution client
+│   ├── reth/                          # Reth execution client results
+│   └── ethrex/                        # Ethrex execution client results
+└── archived/                          # Archived results from previous runs
+    ├── 2024-01/                       # Results from January 2024
+    ├── 2024-02/                       # Results from February 2024
+    └── ...
+```
+
+## Viewing Results
+
+### Gas-Categorized Results
+
+Browse results organized by gas categories:
+
+```bash
+# List all gas categories
+ls benchmark-results/gas-categorized/
+
+# View results for specific gas category
+ls benchmark-results/gas-categorized/10M/
+
+# View a specific result file
+cat benchmark-results/gas-categorized/10M/block_001.json
+```
+
+### zkVM Comparison Results
+
+Compare results across different zkVM implementations:
+
+```bash
+# List all zkVM implementations
+ls benchmark-results/zkvm-comparisons/
+
+# View RISC0 results
+ls benchmark-results/zkvm-comparisons/risc0/
+
+# Compare RISC0 and SP1 results
+diff benchmark-results/zkvm-comparisons/risc0/ benchmark-results/zkvm-comparisons/sp1/
+```
+
+## Generating Results
+
+### Complete Workflow
+
+```bash
+# 1. Generate fixtures
+./scripts/generate-gas-categorized-fixtures.sh
+
+# 2. Run profiling
+./scripts/run-gas-categorized-benchmarks.sh
+
+# 3. Compare results between different zkVM implementations
+python3 scripts/compare_executions.py zkevm-metrics-risc0-1M zkevm-metrics-sp1-1M
+python3 scripts/compare_provings.py zkevm-metrics-risc0-1M zkevm-metrics-sp1-1M
+```
+
+## File Types and Formats
+
+### JSON Metrics Files
+- **Location**: `gas-categorized/` and `zkvm-comparisons/`
+- **Format**: JSON files containing detailed profiling metrics
+- **Content**: Execution cycles, proving time, memory usage, and metadata
+- **Usage**: Raw data for analysis and comparison
+
+## Organization Best Practices
+
+### Naming Conventions
+
+#### Gas Category Directories
+- Format: `{GAS_VALUE}` (e.g., `1M`, `10M`, `100M`)
+- Purpose: Organize results by computational complexity
+
+#### zkVM Comparison Directories
+- Format: `{ZKVM_NAME}` (e.g., `risc0`, `sp1`, `openvm`)
+- Purpose: Organize results by zkVM implementation
+
+### Archiving Strategy
+
+#### Regular Archiving
+```bash
+# Archive current results monthly
+mv benchmark-results/gas-categorized/1M benchmark-results/archived/$(date +%Y-%m)/1M
+
+# Create new directory for fresh results
+mkdir -p benchmark-results/gas-categorized/1M
+```
+
+## Analysis Workflows
+
+### Quick Analysis
+```bash
+# Check specific gas category
+ls benchmark-results/gas-categorized/10M/
+```
+
+### Detailed Comparison
+```bash
+# Compare execution metrics between zkVMs
+python3 scripts/compare_executions.py zkevm-metrics-risc0-10M zkevm-metrics-sp1-10M
+
+# Compare proving metrics between zkVMs
+python3 scripts/compare_provings.py zkevm-metrics-risc0-10M zkevm-metrics-sp1-10M
+```
+
+## Troubleshooting
+
+### Missing Results
+```bash
+# Check if profiling has been run
+ls zkevm-metrics-*
+
+# Verify fixtures exist
+ls zkevm-fixtures-input-*
+
+# Run profiling if missing
+./scripts/run-gas-categorized-benchmarks.sh
+```
+
+### Permission Issues
+```bash
+# Fix directory permissions
+chmod 755 benchmark-results/
+chmod 755 benchmark-results/*/
+```
+
+### Disk Space Management
+```bash
+# Check disk usage
+du -sh benchmark-results/
+
+# Clean up old results
+rm -rf benchmark-results/archived/old-results/
+```
+
+## Best Practices
+
+### Organization
+1. **Use Consistent Naming**: Follow established naming conventions
+2. **Regular Archiving**: Archive old results to maintain organization
+3. **Document Changes**: Update README files when adding new structures
+4. **Version Control**: Consider versioning important result sets
+
+### Analysis
+1. **Start with Latest**: Begin analysis with the most recent results
+2. **Compare Systematically**: Use comparison scripts for systematic analysis
+3. **Document Findings**: Add notes about significant discoveries
+
+### Maintenance
+1. **Regular Cleanup**: Archive old results to keep directory organized
+2. **Backup Important Results**: Keep copies of significant findings
+3. **Monitor Disk Usage**: Ensure sufficient space for new results
+4. **Update Documentation**: Keep README files current with directory structure
+
+## Integration with Documentation
+
+The benchmark results directory integrates with the main documentation:
+
+- **Getting Started**: Overview of the profiling workflow and results organization
+- **Gas Categorized Benchmarks**: How to generate the results stored here
+- **Scripts**: Documentation for comparison scripts
+
+## Examples
+
+### Comparing Implementations
+```bash
+# Compare RISC0 vs SP1 execution metrics
+python3 scripts/compare_executions.py zkevm-metrics-risc0-10M zkevm-metrics-sp1-10M
+
+# Compare RISC0 vs SP1 proving metrics
+python3 scripts/compare_provings.py zkevm-metrics-risc0-10M zkevm-metrics-sp1-10M
+```

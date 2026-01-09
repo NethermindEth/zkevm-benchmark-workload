@@ -1,0 +1,233 @@
+# Scripts Documentation
+
+This page provides comprehensive documentation for all scripts in the zkEVM benchmark workload system. These scripts handle benchmark execution, results analysis, fixture management, and various utilities.
+
+## Overview
+
+The scripts are organized into several categories:
+
+- **Benchmark Execution**: Run benchmarks on fixtures
+- **Results Analysis**: Compare results between different runs
+- **Fixture Management**: Download, generate, and process test fixtures
+- **Utilities**: Helper scripts for data processing and naming
+
+## Benchmark Execution Scripts
+
+### Gas Categorized Benchmarks
+
+The `run-gas-categorized-benchmarks.sh` script runs benchmarks on each gas-categorized fixtures folder and outputs results to metrics folders.
+
+#### Usage
+
+```bash
+./scripts/run-gas-categorized-benchmarks.sh [OPTIONS]
+```
+
+#### Key Options
+
+- `--dry-run`: Show what would be executed without running
+- `--action <ACTION>`: Benchmark action (default: prove)
+- `--resource <RESOURCE>`: Resource type (default: gpu)
+- `--zkvm <ZKVM>`: zkVM implementation (default: risc0)
+- `--execution-client <CLIENT>`: Execution client (default: reth)
+- `--gas-category <CATEGORY>`: Run on specific gas category only
+- `--memory-tracking`: Enable memory tracking (default: false)
+
+#### Examples
+
+```bash
+# Run all gas categories with default settings
+./scripts/run-gas-categorized-benchmarks.sh
+
+# Run with specific zkVM and execution client
+./scripts/run-gas-categorized-benchmarks.sh --zkvm sp1 --execution-client ethrex
+
+# Run on just one gas category
+./scripts/run-gas-categorized-benchmarks.sh --gas-category 10M
+```
+
+## Comparison Scripts
+
+### Execution Comparison
+
+The `compare_executions.py` script compares execution metrics between baseline and optimized runs, focusing on region cycles and total execution cycles.
+
+#### Usage
+
+```bash
+python3 scripts/compare_executions.py <baseline_folder> <optimized_folder>
+```
+
+#### Features
+
+- Detailed speedup analysis by region
+- Statistical analysis with best/worst performers
+- Overall performance summary with total cycles
+
+### Proving Comparison
+
+The `compare_provings.py` script compares proving time metrics between baseline and optimized runs.
+
+#### Usage
+
+```bash
+python3 scripts/compare_provings.py <baseline_folder> <optimized_folder>
+```
+
+#### Features
+
+- Proving time speedup analysis
+- Time savings calculations
+- Efficiency gain reporting
+
+## Fixture Management Scripts
+
+### Gas Categorized Fixtures
+
+The `generate-gas-categorized-fixtures.sh` script generates gas-categorized fixtures for benchmarking by running the witness-generator-cli for each gas category.
+
+#### Usage
+
+```bash
+./scripts/generate-gas-categorized-fixtures.sh [EEST_TAG] [BASE_OUTPUT_DIR]
+```
+
+#### Features
+
+- Generates fixtures for all gas categories (1M, 10M, 30M, 45M, 60M, 100M, 500M)
+- Supports custom EEST tags and output directories
+- Dry-run mode for previewing operations
+
+### Fixture Download
+
+The `download-and-extract-fixtures.sh` script downloads and extracts test fixtures from the ethereum/execution-spec-tests repository.
+
+#### Usage
+
+```bash
+./scripts/download-and-extract-fixtures.sh [TAG|latest] [DEST_DIR]
+```
+
+#### Features
+
+- Automatic latest release detection
+- Multiple download strategies with retries
+- Support for different fixture types (benchmark, stable, etc.)
+
+### Chain Config Migration
+
+The `migrate_mainnet_fixtures_chainconfig.py` script processes zkevm fixture JSON files by updating chain configuration to a standardized format.
+
+#### Usage
+
+```bash
+python3 scripts/migrate_mainnet_fixtures_chainconfig.py <input_folder> [-o <output_folder>]
+```
+
+## Utility Scripts
+
+### Test Name Parser
+
+The `test_name_parser.py` script provides parsing functionality for complex test file names, used by other scripts for name formatting.
+
+#### Features
+
+- Extracts test categories, functions, and parameters
+- Generates display names and simplified names
+- Supports multiple naming formats
+
+## Complete Workflow Examples
+
+### Standard Benchmark Workflow
+
+1. **Download fixtures:**
+   ```bash
+   ./scripts/download-and-extract-fixtures.sh
+   ```
+
+2. **Generate gas-categorized fixtures:**
+   ```bash
+   ./scripts/generate-gas-categorized-fixtures.sh
+   ```
+
+3. **Run benchmarks:**
+   ```bash
+   ./scripts/run-gas-categorized-benchmarks.sh
+   ```
+
+### Performance Comparison Workflow
+
+1. **Run baseline benchmarks:**
+   ```bash
+   ./scripts/run-gas-categorized-benchmarks.sh --zkvm risc0
+   ```
+
+2. **Run optimized benchmarks:**
+   ```bash
+   ./scripts/run-gas-categorized-benchmarks.sh --zkvm sp1
+   ```
+
+3. **Compare results:**
+   ```bash
+   python3 scripts/compare_executions.py zkevm-metrics-risc0-1M zkevm-metrics-sp1-1M
+   python3 scripts/compare_provings.py zkevm-metrics-risc0-1M zkevm-metrics-sp1-1M
+   ```
+
+## Configuration
+
+### Gas Categories
+
+The system supports the following gas categories:
+
+- **1M**: 1 million gas limit
+- **10M**: 10 million gas limit  
+- **30M**: 30 million gas limit
+- **45M**: 45 million gas limit
+- **60M**: 60 million gas limit
+- **100M**: 100 million gas limit
+- **500M**: 500 million gas limit
+
+### zkVM Implementations
+
+- **risc0**: RISC0 zkVM implementation (default)
+- **sp1**: SP1 zkVM implementation
+- **openvm**: OpenVM zkVM implementation
+- **pico**: Pico zkVM implementation
+- **zisk**: Zisk zkVM implementation
+
+### Execution Clients
+
+- **reth**: Reth execution client (default)
+- **ethrex**: Ethrex execution client
+
+## Metrics Structure
+
+The benchmark system generates JSON files containing:
+
+### Execution Metrics
+
+- `total_num_cycles`: Total execution cycles
+- `region_cycles`: Cycles by region (setup, compute, teardown, etc.)
+- `execution_duration`: Execution time
+
+### Proving Metrics
+
+- `proof_size`: Proof size in bytes
+- `proving_time_ms`: Proving time in milliseconds
+- `peak_memory_usage_bytes`: Peak memory usage during proving
+- `average_memory_usage_bytes`: Average memory usage during proving
+
+### Metadata
+
+- `name`: Benchmark name
+- `timestamp_completed`: Completion timestamp
+- `metadata`: Additional benchmark-specific data (gas used, etc.)
+
+## Getting Help
+
+All scripts support `--help` or `-h` flags for detailed usage information:
+
+```bash
+./scripts/run-gas-categorized-benchmarks.sh --help
+python3 scripts/compare_executions.py --help
+```
