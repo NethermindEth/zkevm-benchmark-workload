@@ -79,7 +79,7 @@ services:
       postgresql:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 50051 || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null --spider http://localhost:3000 || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -100,7 +100,7 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 50051 || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null --timeout=5 http://localhost:9090/metrics 2>/dev/null || timeout 5 bash -c 'echo > /dev/tcp/localhost/50051' 2>/dev/null || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -249,7 +249,7 @@ services:
       - FULFILLER_CLUSTER_REDIS_NODES=redis://:${REDIS_PASSWORD:-redispassword}@redis:6379/0
       - FULFILLER_METRICS_ADDR=0.0.0.0:9090
       - FULFILLER_RPC_GRPC_ADDR=${RPC_GRPC_ADDR}
-      - FULFILLER_SP1_PRIVATE_KEY=8f59a842310388db9a785653312f501c16e6753979ba6ca5eb74d2e64acef1c7
+      - FULFILLER_SP1_PRIVATE_KEY=${FULFILLER_SP1_PRIVATE_KEY:-}
     depends_on:
       coordinator:
         condition: service_healthy
@@ -267,7 +267,7 @@ services:
       - BIDDER_DOMAIN=SPN_SEPOLIA_V1_DOMAIN
       - BIDDER_METRICS_ADDR=0.0.0.0:9090
       - BIDDER_RPC_GRPC_ADDR=${RPC_GRPC_ADDR}
-      - BIDDER_SP1_PRIVATE_KEY=8f59a842310388db9a785653312f501c16e6753979ba6ca5eb74d2e64acef1c7
+      - BIDDER_SP1_PRIVATE_KEY=${BIDDER_SP1_PRIVATE_KEY:-}
       - BIDDER_THROUGHPUT_MGAS=1
       - BIDDER_MAX_CONCURRENT_PROOFS=1
       - BIDDER_BID_AMOUNT=1
