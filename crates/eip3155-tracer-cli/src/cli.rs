@@ -15,7 +15,12 @@ use std::path::PathBuf;
 #[command(version)]
 pub(crate) struct Cli {
     /// Input folder containing fixture JSON files.
-    #[arg(short, long, default_value = "zkevm-fixtures-input", conflicts_with = "input_file")]
+    #[arg(
+        short,
+        long,
+        default_value = "zkevm-fixtures-input",
+        conflicts_with = "input_file"
+    )]
     pub input_folder: PathBuf,
 
     /// Input file for a single fixture (overrides input_folder).
@@ -29,7 +34,6 @@ pub(crate) struct Cli {
     // === Trace Field Options ===
     // By default only pc, op (opcode), and gasCost are included.
     // Use these flags to enable additional fields.
-
     /// Include stack snapshots in the trace.
     #[arg(long)]
     pub include_stack: bool,
@@ -58,12 +62,19 @@ pub(crate) struct Cli {
     #[arg(long)]
     pub include_refund: bool,
 
+    /// Include summary statistics in trace.
+    #[arg(long)]
+    pub include_summary: bool,
+
+    /// Generate only summary statistics (no structLogs).
+    #[arg(long)]
+    pub summary_only: bool,
+
     /// Include all optional fields in the trace.
-    #[arg(long, conflicts_with_all = ["include_stack", "include_memory", "include_storage", "include_return_data", "include_gas", "include_depth", "include_refund"])]
+    #[arg(long, conflicts_with_all = ["include_stack", "include_memory", "include_storage", "include_return_data", "include_gas", "include_depth", "include_refund", "include_summary", "summary_only"])]
     pub full: bool,
 
     // === Output Format Options ===
-
     /// Pretty-print JSON output.
     #[arg(long)]
     pub pretty_print: bool,

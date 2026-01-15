@@ -3,22 +3,20 @@
 //! This module provides the main tracing functionality for executing blocks
 //! with full EIP-3155 opcode-level tracing using `TracingInspector`.
 
-use crate::output::TraceWriter;
+use crate::output::{SummaryAccumulator, TraceWriter};
 use crate::witness_db::WitnessDatabase;
 use alloy_consensus::{BlockHeader, Header};
 use alloy_genesis::ChainConfig;
-use alloy_primitives::{keccak256, Address, B256};
+use alloy_primitives::{Address, B256, keccak256};
 use alloy_rpc_types_trace::geth::{GethDefaultTracingOptions, GethTrace};
 use reth_chainspec::EthereumHardforks;
 use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_evm::ConfigureEvm;
 use reth_evm_ethereum::EthEvmConfig;
-use reth_primitives_traits::{Block as _, RecoveredBlock, Recovered, SealedHeader};
+use reth_primitives_traits::{Block as _, Recovered, RecoveredBlock, SealedHeader};
 use reth_revm::{DatabaseCommit, InspectEvm, MainBuilder, MainContext, State};
-use reth_stateless::{trie::StatelessTrie, ExecutionWitness, Genesis, UncompressedPublicKey};
-use revm_inspectors::tracing::{
-    StackSnapshotType, TracingInspector, TracingInspectorConfig,
-};
+use reth_stateless::{ExecutionWitness, Genesis, UncompressedPublicKey, trie::StatelessTrie};
+use revm_inspectors::tracing::{StackSnapshotType, TracingInspector, TracingInspectorConfig};
 use sparsestate::SparseState;
 use std::{collections::BTreeMap, io::Write, sync::Arc};
 
@@ -164,15 +162,22 @@ where
     writer.write_block_start(&recovered_block)?;
 
     // Step 6: Get EVM environment from block header using ConfigureEvm
-    let evm_env = evm_config.evm_env(recovered_block.header())
+    let evm_env = evm_config
+        .evm_env(recovered_block.header())
         .expect("failed to create EVM environment");
 
     // Step 7: Execute each transaction with tracing
     let mut total_gas_used = 0u64;
     let mut all_success = true;
+    let mut summary_accumulator = SummaryAccumulator::new();
 
     for (tx_index, (sender, tx)) in recovered_block.transactions_with_sender().enumerate() {
         let tx_hash = tx.tx_hash();
+
+        // Reset summary accumulator for each transaction
+        if trace_config.include_summary {
+            summary_accumulator.reset();
+        }
 
         // Create tracing inspector based on config
         let stack_snapshots = if trace_config.include_stack {
@@ -189,7 +194,7 @@ where
 
         // Create a recovered transaction for tx_env
         let recovered_tx = Recovered::new_unchecked(tx.clone(), *sender);
-        
+
         // Get transaction environment
         let tx_env = evm_config.tx_env(&recovered_tx);
 
@@ -225,14 +230,24 @@ where
                     .with_disable_storage(!trace_config.include_storage)
                     .with_enable_return_data(trace_config.include_return_data);
 
-                let geth_frame = inspector
-                    .into_geth_builder()
-                    .geth_traces(gas_used, return_value, geth_trace_opts);
+                let geth_frame = inspector.into_geth_builder().geth_traces(
+                    gas_used,
+                    return_value,
+                    geth_trace_opts,
+                );
+
+                // Generate summary if requested
+                let summary = if trace_config.include_summary {
+                    summary_accumulator.process_trace(&geth_frame);
+                    Some(summary_accumulator.generate_summary())
+                } else {
+                    None
+                };
 
                 // Convert to GethTrace for output
                 let geth_trace = GethTrace::Default(geth_frame);
 
-                writer.write_transaction_trace(tx_index, &tx_hash, &geth_trace)?;
+                writer.write_transaction_trace(tx_index, &tx_hash, &geth_trace, summary)?;
 
                 // Commit state changes
                 state.commit(result_and_state.state);
@@ -332,7 +347,7 @@ fn verify_and_compute_sender(
     tx: &TransactionSigned,
     is_homestead: bool,
 ) -> Result<Address, TracedExecutionError> {
-    use k256::ecdsa::{signature::hazmat::PrehashVerifier, VerifyingKey};
+    use k256::ecdsa::{VerifyingKey, signature::hazmat::PrehashVerifier};
 
     let sig = tx.signature();
 

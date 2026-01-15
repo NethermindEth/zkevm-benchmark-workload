@@ -41,6 +41,8 @@ fn main() -> Result<()> {
             include_gas: cli.include_gas,
             include_depth: cli.include_depth,
             include_refund: cli.include_refund,
+            include_summary: cli.include_summary,
+            summary_only: cli.summary_only,
             pretty_print: cli.pretty_print,
         }
     };

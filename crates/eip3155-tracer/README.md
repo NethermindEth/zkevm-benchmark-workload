@@ -149,6 +149,79 @@ let config = TraceOutput::default()
 
 // Include all fields
 let config = TraceOutput::full();
+
+// Include summary statistics
+let config = TraceOutput::default()
+    .with_summary()
+    .with_storage();
+
+// Generate only summary (no structLogs)
+let config = TraceOutput::default().summary_only();
+```
+
+### Summary Statistics
+
+The tracer can generate summary statistics that aggregate opcode and gas cost information:
+
+#### Summary Configuration
+```rust
+// Include summary alongside structLogs
+let config = TraceOutput::default()
+    .with_summary();
+
+// Generate only summary (no structLogs)
+let config = TraceOutput::default().summary_only();
+```
+
+#### Summary Output Format
+When summary is enabled, each transaction trace includes a `summary` field:
+
+```json
+{
+  "type": "transaction_trace",
+  "tx_index": 0,
+  "tx_hash": "0x...",
+  "trace": { ... },
+  "summary": {
+    "total_opcodes": 150,
+    "total_gas_cost": 21000,
+    "opcode_breakdown": [
+      {
+        "opcode": "PUSH1",
+        "count": 45,
+        "total_gas_cost": 135,
+        "average_gas_cost": 3.0
+      },
+      {
+        "opcode": "SSTORE",
+        "count": 2,
+        "total_gas_cost": 10000,
+        "average_gas_cost": 5000.0
+      }
+    ]
+  }
+}
+```
+
+#### Summary Fields
+- `total_opcodes`: Total number of opcodes executed
+- `total_gas_cost`: Total gas cost for all opcodes  
+- `opcode_breakdown`: Array of per-opcode statistics sorted by total gas cost (descending)
+  - `opcode`: Opcode name
+  - `count`: Number of times executed
+  - `total_gas_cost`: Total gas cost for this opcode
+  - `average_gas_cost`: Average gas cost per execution
+
+#### CLI Usage
+```bash
+# Include summary statistics
+eip3155-trace --include-summary -i input -o output
+
+# Generate only summary (no structLogs)
+eip3155-trace --summary-only -i input -o output
+
+# Include all fields + summary
+eip3155-trace --full -i input -o output
 ```
 
 ### TraceWriter

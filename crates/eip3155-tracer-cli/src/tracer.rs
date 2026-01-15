@@ -19,20 +19,24 @@ use witness_generator::StatelessExecutorFixture;
 /// By default, only minimal fields are included: `pc`, `op` (opcode), and `gasCost`.
 #[derive(Debug, Clone)]
 pub(crate) struct TraceConfig {
-    /// Include stack snapshots in the trace.
+    /// Include stack snapshots in trace.
     pub include_stack: bool,
-    /// Include memory snapshots in the trace (increases output size significantly).
+    /// Include memory snapshots in trace (increases output size significantly).
     pub include_memory: bool,
-    /// Include storage changes in the trace.
+    /// Include storage changes in trace.
     pub include_storage: bool,
-    /// Include return data in the trace.
+    /// Include return data in trace.
     pub include_return_data: bool,
-    /// Include gas remaining in the trace (not just gasCost).
+    /// Include gas remaining in trace (not just gasCost).
     pub include_gas: bool,
-    /// Include call depth in the trace.
+    /// Include call depth in trace.
     pub include_depth: bool,
-    /// Include gas refund counter in the trace.
+    /// Include gas refund counter in trace.
     pub include_refund: bool,
+    /// Include summary statistics in trace.
+    pub include_summary: bool,
+    /// Generate only summary statistics (no structLogs).
+    pub summary_only: bool,
     /// Pretty-print JSON output.
     pub pretty_print: bool,
 }
@@ -47,6 +51,8 @@ impl Default for TraceConfig {
             include_gas: false,
             include_depth: false,
             include_refund: false,
+            include_summary: false,
+            summary_only: false,
             pretty_print: false,
         }
     }
@@ -63,6 +69,8 @@ impl TraceConfig {
             include_gas: true,
             include_depth: true,
             include_refund: true,
+            include_summary: true,
+            summary_only: false,
             pretty_print: false,
         }
     }
@@ -96,8 +104,12 @@ pub(crate) fn trace_fixtures(
     config: &TraceConfig,
 ) -> Result<Vec<TraceResult>> {
     // Ensure output directory exists
-    fs::create_dir_all(output_folder)
-        .with_context(|| format!("Failed to create output directory: {}", output_folder.display()))?;
+    fs::create_dir_all(output_folder).with_context(|| {
+        format!(
+            "Failed to create output directory: {}",
+            output_folder.display()
+        )
+    })?;
 
     let fixtures = match input_file {
         Some(file) => vec![read_fixture_file(file)?],
@@ -146,6 +158,8 @@ fn trace_single_fixture(
         include_gas: config.include_gas,
         include_depth: config.include_depth,
         include_refund: config.include_refund,
+        include_summary: config.include_summary,
+        summary_only: config.summary_only,
         pretty_print: config.pretty_print,
     };
 
@@ -200,8 +214,10 @@ fn read_fixtures_folder(path: &Path) -> Result<Vec<StatelessExecutorFixture>> {
         })
         .map(|entry| {
             let content = fs::read(entry.path())?;
-            let fixture: StatelessExecutorFixture = serde_json::from_slice(&content)
-                .map_err(|e| anyhow::anyhow!("Failed to parse {}: {}", entry.path().display(), e))?;
+            let fixture: StatelessExecutorFixture =
+                serde_json::from_slice(&content).map_err(|e| {
+                    anyhow::anyhow!("Failed to parse {}: {}", entry.path().display(), e)
+                })?;
             Ok(fixture)
         })
         .collect()

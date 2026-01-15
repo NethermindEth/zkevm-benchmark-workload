@@ -7,9 +7,9 @@ use alloc::{
     sync::Arc,
     vec::Vec,
 };
-use alloy_consensus::{BlockHeader, Header};
 #[cfg(feature = "std")]
 use alloy_consensus::TxReceipt;
+use alloy_consensus::{BlockHeader, Header};
 use alloy_primitives::{Address, B256, keccak256};
 use reth_chainspec::{EthChainSpec, EthereumHardforks};
 use reth_ethereum_primitives::{Block, EthPrimitives, TransactionSigned};

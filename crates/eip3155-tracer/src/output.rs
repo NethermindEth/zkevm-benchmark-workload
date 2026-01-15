@@ -5,10 +5,11 @@
 
 use alloy_consensus::BlockHeader;
 use alloy_primitives::B256;
-use alloy_rpc_types_trace::geth::GethTrace;
+use alloy_rpc_types_trace::geth::{DefaultFrame, GethTrace};
 use reth_ethereum_primitives::Block;
 use reth_primitives_traits::RecoveredBlock;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::io::Write;
 
 /// Trace output configuration.
@@ -31,6 +32,10 @@ pub struct TraceOutput {
     pub include_depth: bool,
     /// Include gas refund counter in trace.
     pub include_refund: bool,
+    /// Include summary statistics in trace.
+    pub include_summary: bool,
+    /// Generate only summary statistics (no structLogs).
+    pub summary_only: bool,
     /// Pretty-print JSON output.
     pub pretty_print: bool,
 }
@@ -46,81 +51,10 @@ impl Default for TraceOutput {
             include_gas: false,
             include_depth: false,
             include_refund: false,
+            include_summary: false,
+            summary_only: false,
             pretty_print: false,
         }
-    }
-}
-
-impl TraceOutput {
-    /// Create a trace output configuration with all fields enabled.
-    #[must_use]
-    pub const fn full() -> Self {
-        Self {
-            include_stack: true,
-            include_memory: true,
-            include_storage: true,
-            include_return_data: true,
-            include_gas: true,
-            include_depth: true,
-            include_refund: true,
-            pretty_print: false,
-        }
-    }
-
-    /// Enable stack snapshots in trace.
-    #[must_use]
-    pub const fn with_stack(mut self) -> Self {
-        self.include_stack = true;
-        self
-    }
-
-    /// Enable memory snapshots in trace.
-    #[must_use]
-    pub const fn with_memory(mut self) -> Self {
-        self.include_memory = true;
-        self
-    }
-
-    /// Enable storage changes in trace.
-    #[must_use]
-    pub const fn with_storage(mut self) -> Self {
-        self.include_storage = true;
-        self
-    }
-
-    /// Enable return data in trace.
-    #[must_use]
-    pub const fn with_return_data(mut self) -> Self {
-        self.include_return_data = true;
-        self
-    }
-
-    /// Enable gas remaining in trace.
-    #[must_use]
-    pub const fn with_gas(mut self) -> Self {
-        self.include_gas = true;
-        self
-    }
-
-    /// Enable call depth in trace.
-    #[must_use]
-    pub const fn with_depth(mut self) -> Self {
-        self.include_depth = true;
-        self
-    }
-
-    /// Enable gas refund counter in trace.
-    #[must_use]
-    pub const fn with_refund(mut self) -> Self {
-        self.include_refund = true;
-        self
-    }
-
-    /// Enable pretty-print JSON output.
-    #[must_use]
-    pub const fn with_pretty_print(mut self) -> Self {
-        self.pretty_print = true;
-        self
     }
 }
 
@@ -192,6 +126,7 @@ impl<W: Write> TraceWriter<W> {
         tx_index: usize,
         tx_hash: &B256,
         trace: &GethTrace,
+        summary: Option<TransactionSummary>,
     ) -> std::io::Result<()> {
         #[derive(Serialize)]
         struct TransactionTrace<'a> {
@@ -199,14 +134,36 @@ impl<W: Write> TraceWriter<W> {
             type_: &'static str,
             tx_index: usize,
             tx_hash: String,
-            trace: &'a GethTrace,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            trace: Option<&'a GethTrace>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            summary: Option<&'a TransactionSummary>,
         }
+
+        // Handle summary_only mode: omit structLogs from trace if needed
+        let _processed_trace = if self.config.summary_only {
+            if let GethTrace::Default(mut frame) = trace.clone() {
+                frame.struct_logs = Vec::new();
+                GethTrace::Default(frame)
+            } else {
+                trace.clone()
+            }
+        } else {
+            trace.clone()
+        };
+
+        let trace_ref = if self.config.summary_only {
+            None
+        } else {
+            Some(trace)
+        };
 
         let output = TransactionTrace {
             type_: "transaction_trace",
             tx_index,
             tx_hash: format!("{:?}", tx_hash),
-            trace,
+            trace: trace_ref,
+            summary: summary.as_ref(),
         };
         self.write_json(&output)
     }
@@ -269,5 +226,98 @@ impl<W: Write> TraceWriter<W> {
     /// Flush the underlying writer.
     pub fn flush(&mut self) -> std::io::Result<()> {
         self.writer.flush()
+    }
+}
+
+/// Summary statistics for opcode execution.
+#[derive(Debug, Clone, Serialize)]
+pub struct OpcodeSummary {
+    /// Opcode name (e.g., "PUSH1", "SSTORE").
+    pub opcode: String,
+    /// Number of times this opcode was executed.
+    pub count: u64,
+    /// Total gas cost for all executions of this opcode.
+    pub total_gas_cost: u64,
+    /// Average gas cost per execution.
+    pub average_gas_cost: f64,
+}
+
+/// Summary statistics for a transaction.
+#[derive(Debug, Clone, Serialize)]
+pub struct TransactionSummary {
+    /// Total number of opcodes executed.
+    pub total_opcodes: u64,
+    /// Total gas cost for all opcodes.
+    pub total_gas_cost: u64,
+    /// Breakdown by opcode.
+    pub opcode_breakdown: Vec<OpcodeSummary>,
+}
+
+/// Accumulator for generating summary statistics.
+#[derive(Debug, Default)]
+pub struct SummaryAccumulator {
+    /// Map of opcode to (count, total_gas_cost).
+    opcode_data: HashMap<String, (u64, u64)>,
+    /// Total number of opcodes executed.
+    total_opcodes: u64,
+    /// Total gas cost for all opcodes.
+    total_gas_cost: u64,
+}
+
+impl SummaryAccumulator {
+    /// Create a new summary accumulator.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Process a Geth trace and accumulate statistics.
+    pub fn process_trace(&mut self, trace: &DefaultFrame) {
+        for log in &trace.struct_logs {
+            self.accumulate_opcode(&log.op, log.gas_cost);
+        }
+    }
+
+    /// Accumulate data for a single opcode execution.
+    fn accumulate_opcode(&mut self, opcode: &str, gas_cost: u64) {
+        let (count, total_cost) = self.opcode_data.entry(opcode.to_string()).or_insert((0, 0));
+
+        *count += 1;
+        *total_cost += gas_cost;
+        self.total_opcodes += 1;
+        self.total_gas_cost += gas_cost;
+    }
+
+    /// Generate the final summary.
+    pub fn generate_summary(&self) -> TransactionSummary {
+        let mut opcode_breakdown: Vec<OpcodeSummary> = self
+            .opcode_data
+            .iter()
+            .map(|(opcode, &(count, total_cost))| OpcodeSummary {
+                opcode: opcode.clone(),
+                count,
+                total_gas_cost: total_cost,
+                average_gas_cost: if count > 0 {
+                    total_cost as f64 / count as f64
+                } else {
+                    0.0
+                },
+            })
+            .collect();
+
+        // Sort by total gas cost descending (most expensive opcodes first)
+        opcode_breakdown.sort_by(|a, b| b.total_gas_cost.cmp(&a.total_gas_cost));
+
+        TransactionSummary {
+            total_opcodes: self.total_opcodes,
+            total_gas_cost: self.total_gas_cost,
+            opcode_breakdown,
+        }
+    }
+
+    /// Reset the accumulator for a new transaction.
+    pub fn reset(&mut self) {
+        self.opcode_data.clear();
+        self.total_opcodes = 0;
+        self.total_gas_cost = 0;
     }
 }

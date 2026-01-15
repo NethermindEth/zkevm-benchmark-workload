@@ -52,7 +52,7 @@ mod output;
 mod tracer;
 mod witness_db;
 
-pub use output::{TraceOutput, TraceWriter};
+pub use output::{OpcodeSummary, TraceOutput, TraceWriter, TransactionSummary};
 pub use tracer::{TracedExecution, TracedExecutionError, trace_block};
 
 // Re-export types that users will need

@@ -17,8 +17,7 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 use crate::cli::{
-    Cli, GuestProgramCommand, Resource, StatelessExecutorClient,
-    StatelessValidatorClient,
+    Cli, GuestProgramCommand, Resource, StatelessExecutorClient, StatelessValidatorClient,
 };
 
 pub mod cli;
