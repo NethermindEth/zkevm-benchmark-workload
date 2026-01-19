@@ -9,8 +9,18 @@ use alloy_consensus::{BlockHeader, Header};
 use alloy_genesis::ChainConfig;
 use alloy_primitives::{Address, B256, keccak256, map::HashMap};
 use alloy_rpc_types_trace::geth::GethTrace;
+use alloy_rpc_types_trace::geth::StructLog;
 use alloy_rpc_types_trace::geth::erc7562::{AccessedSlots, CallFrameType, Erc7562Frame};
 use reth_chainspec::EthereumHardforks;
+use serde::{Deserialize, Serialize};
+
+/// Custom ERC-7562 frame that includes opcode-level structLogs for detailed tracing.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CustomErc7562Frame {
+    #[serde(flatten)]
+    pub base: Erc7562Frame,
+    pub struct_logs: Vec<StructLog>,
+}
 use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_evm::ConfigureEvm;
 use reth_evm_ethereum::EthEvmConfig;
@@ -18,6 +28,7 @@ use reth_primitives_traits::{Block as _, Recovered, RecoveredBlock, SealedHeader
 use reth_revm::{DatabaseCommit, InspectEvm, MainBuilder, MainContext, State};
 use reth_stateless::{ExecutionWitness, Genesis, UncompressedPublicKey, trie::StatelessTrie};
 use revm_inspectors::tracing::{StackSnapshotType, TracingInspector, TracingInspectorConfig};
+use serde_json;
 use sparsestate::SparseState;
 use std::{collections::BTreeMap, io::Write, sync::Arc};
 
@@ -225,7 +236,21 @@ where
                     .cloned()
                     .unwrap_or_default();
 
-                // Build ERC-7562 trace
+                // Build default trace for structLogs
+                let geth_trace_opts =
+                    alloy_rpc_types_trace::geth::GethDefaultTracingOptions::default()
+                        .with_enable_memory(trace_config.include_memory)
+                        .with_disable_stack(!trace_config.include_stack)
+                        .with_disable_storage(!trace_config.include_storage)
+                        .with_enable_return_data(trace_config.include_return_data);
+
+                let default_frame = inspector.into_geth_builder().geth_traces(
+                    gas_used,
+                    return_value.clone(),
+                    geth_trace_opts,
+                );
+
+                // Build ERC-7562 trace with configured options for opcode details
                 let erc_frame = Erc7562Frame {
                     call_frame_type: CallFrameType::Call,
                     from: *sender,
@@ -250,16 +275,21 @@ where
                     calls: vec![],
                 };
 
+                let custom_frame = CustomErc7562Frame {
+                    base: erc_frame,
+                    struct_logs: default_frame.struct_logs,
+                };
+
                 // Generate summary if requested
                 let summary = if trace_config.include_summary {
-                    summary_accumulator.process_trace(&erc_frame);
+                    summary_accumulator.process_trace(&custom_frame.struct_logs);
                     Some(summary_accumulator.generate_summary())
                 } else {
                     None
                 };
 
                 // Convert to GethTrace for output
-                let geth_trace = GethTrace::Erc7562Tracer(erc_frame);
+                let geth_trace = GethTrace::JS(serde_json::to_value(&custom_frame).unwrap());
 
                 writer.write_transaction_trace(tx_index, &tx_hash, &geth_trace, summary)?;
 
