@@ -5,7 +5,8 @@
 
 use alloy_consensus::BlockHeader;
 use alloy_primitives::B256;
-use alloy_rpc_types_trace::geth::{DefaultFrame, GethTrace};
+use alloy_rpc_types_trace::geth::GethTrace;
+use alloy_rpc_types_trace::geth::erc7562::Erc7562Frame;
 use reth_ethereum_primitives::Block;
 use reth_primitives_traits::RecoveredBlock;
 use serde::Serialize;
@@ -140,18 +141,6 @@ impl<W: Write> TraceWriter<W> {
             summary: Option<&'a TransactionSummary>,
         }
 
-        // Handle summary_only mode: omit structLogs from trace if needed
-        let _processed_trace = if self.config.summary_only {
-            if let GethTrace::Default(mut frame) = trace.clone() {
-                frame.struct_logs = Vec::new();
-                GethTrace::Default(frame)
-            } else {
-                trace.clone()
-            }
-        } else {
-            trace.clone()
-        };
-
         let trace_ref = if self.config.summary_only {
             None
         } else {
@@ -271,9 +260,12 @@ impl SummaryAccumulator {
     }
 
     /// Process a Geth trace and accumulate statistics.
-    pub fn process_trace(&mut self, trace: &DefaultFrame) {
-        for log in &trace.struct_logs {
-            self.accumulate_opcode(&log.op, log.gas_cost);
+    pub fn process_trace(&mut self, trace: &Erc7562Frame) {
+        for (&opcode, &count) in &trace.used_opcodes {
+            let opcode_name = format!("0x{:x}", opcode);
+            self.opcode_data.entry(opcode_name).or_insert((0, 0)).0 += count;
+            self.total_opcodes += count as u64;
+            // gas_cost not available, so total_gas_cost remains 0
         }
     }
 

@@ -7,8 +7,9 @@ use crate::output::{SummaryAccumulator, TraceWriter};
 use crate::witness_db::WitnessDatabase;
 use alloy_consensus::{BlockHeader, Header};
 use alloy_genesis::ChainConfig;
-use alloy_primitives::{Address, B256, keccak256};
-use alloy_rpc_types_trace::geth::{GethDefaultTracingOptions, GethTrace};
+use alloy_primitives::{Address, B256, keccak256, map::HashMap};
+use alloy_rpc_types_trace::geth::GethTrace;
+use alloy_rpc_types_trace::geth::erc7562::{AccessedSlots, CallFrameType, Erc7562Frame};
 use reth_chainspec::EthereumHardforks;
 use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_evm::ConfigureEvm;
@@ -197,6 +198,7 @@ where
 
         // Get transaction environment
         let tx_env = evm_config.tx_env(&recovered_tx);
+        let tx_env_clone = tx_env.clone();
 
         // Build the EVM context with our state
         let ctx = reth_revm::Context::mainnet()
@@ -209,7 +211,7 @@ where
         let mut evm = ctx.build_mainnet_with_inspector(&mut inspector);
 
         // Execute the transaction with inspector (enables step-level tracing)
-        let result = InspectEvm::inspect_tx(&mut evm, tx_env);
+        let result = InspectEvm::inspect_tx(&mut evm, tx_env_clone);
 
         match result {
             Ok(result_and_state) => {
@@ -223,29 +225,41 @@ where
                     .cloned()
                     .unwrap_or_default();
 
-                // Build EIP-3155 trace with configurable structLogs
-                let geth_trace_opts = GethDefaultTracingOptions::default()
-                    .with_enable_memory(trace_config.include_memory)
-                    .with_disable_stack(!trace_config.include_stack)
-                    .with_disable_storage(!trace_config.include_storage)
-                    .with_enable_return_data(trace_config.include_return_data);
-
-                let geth_frame = inspector.into_geth_builder().geth_traces(
+                // Build ERC-7562 trace
+                let erc_frame = Erc7562Frame {
+                    call_frame_type: CallFrameType::Call,
+                    from: *sender,
+                    gas: tx_env.gas_limit,
                     gas_used,
-                    return_value,
-                    geth_trace_opts,
-                );
+                    to: match tx_env.kind {
+                        reth_revm::primitives::TxKind::Call(to) => Some(to),
+                        _ => None,
+                    },
+                    input: tx_env.data.clone(),
+                    output: Some(return_value),
+                    error: None,
+                    revert_reason: None,
+                    logs: vec![],
+                    value: Some(tx_env.value),
+                    accessed_slots: AccessedSlots::default(),
+                    ext_code_access_info: vec![],
+                    used_opcodes: HashMap::default(),
+                    contract_size: HashMap::default(),
+                    out_of_gas: false,
+                    keccak: vec![],
+                    calls: vec![],
+                };
 
                 // Generate summary if requested
                 let summary = if trace_config.include_summary {
-                    summary_accumulator.process_trace(&geth_frame);
+                    summary_accumulator.process_trace(&erc_frame);
                     Some(summary_accumulator.generate_summary())
                 } else {
                     None
                 };
 
                 // Convert to GethTrace for output
-                let geth_trace = GethTrace::Default(geth_frame);
+                let geth_trace = GethTrace::Erc7562Tracer(erc_frame);
 
                 writer.write_transaction_trace(tx_index, &tx_hash, &geth_trace, summary)?;
 
