@@ -48,12 +48,34 @@
 )]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
+pub mod opcodes;
 mod output;
+pub mod query;
 mod tracer;
+pub mod validation;
 mod witness_db;
 
-pub use output::{OpcodeSummary, TraceOutput, TraceWriter, TransactionSummary};
-pub use tracer::{TracedExecution, TracedExecutionError, trace_block};
+pub use opcodes::{get_opcode_name, get_precompile_name, is_call_opcode};
+pub use output::{
+    OpcodeSummary, PrecompileSummary, SummaryAccumulator, TraceOutput, TraceWriter,
+    TransactionSummary,
+};
+pub use query::{
+    AccessedSlots, AggregateStats, BlockEnd, BlockStart, OpcodeUsage, PrecompileUsage,
+    QueryMetadata, QueryResult, StructLogEntry, TraceFile, TraceQueryError, TraceSummary,
+    TransactionTrace,
+};
+pub use tracer::{
+    CustomErc7562Frame, GasValidationError as TracerGasValidationError,
+    GasValidationResult as TracerGasValidationResult, OpcodeUsageStats, TracedExecution,
+    TracedExecutionError, trace_block,
+};
+pub use validation::{
+    DirectoryValidationResult, FileValidationResult, GasUsageSummary, GasValidationError,
+    GasValidationResult, GasValidationWarning, OpcodeGasUsage, ValidationOptions, WarningType,
+    gas_usage_summary, get_failed_files, has_gas_errors, validate_directory,
+    validate_directory_default, validate_gas, validate_gas_with_options,
+};
 
 // Re-export types that users will need
 pub use reth_stateless::{ExecutionWitness, Genesis, StatelessInput, UncompressedPublicKey};

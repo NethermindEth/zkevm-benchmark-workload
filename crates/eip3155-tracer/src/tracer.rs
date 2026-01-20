@@ -3,6 +3,7 @@
 //! This module provides the main tracing functionality for executing blocks
 //! with full EIP-3155 opcode-level tracing using `TracingInspector`.
 
+use crate::opcodes::{get_opcode_name, get_opcode_value, is_call_opcode};
 use crate::output::{SummaryAccumulator, TraceWriter};
 use crate::witness_db::WitnessDatabase;
 use alloy_consensus::{BlockHeader, Header};
@@ -23,6 +24,54 @@ pub struct CustomErc7562Frame {
     #[serde(flatten)]
     pub base: Erc7562Frame,
     pub struct_logs: Vec<StructLog>,
+    /// Used opcodes with human-readable names: opcode_name -> (count, total_gas)
+    #[serde(rename = "usedOpcodesNamed")]
+    pub used_opcodes_named: HashMap<String, OpcodeUsageStats>,
+    /// Gas validation results (if validation is enabled)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gas_validation: Option<GasValidationResult>,
+}
+
+/// Statistics for a single opcode type.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct OpcodeUsageStats {
+    /// Number of times this opcode was executed.
+    pub count: u64,
+    /// Total gas cost for all executions.
+    pub total_gas: u64,
+    /// Average gas cost per execution.
+    pub avg_gas: f64,
+}
+
+/// Result of gas validation during trace generation.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GasValidationResult {
+    /// Whether all gas values are consistent.
+    pub valid: bool,
+    /// Total number of steps validated.
+    pub steps_validated: usize,
+    /// Number of steps with gas inconsistencies.
+    pub inconsistencies: usize,
+    /// Detailed errors (limited to first 10 to avoid huge output).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub errors: Vec<GasValidationError>,
+}
+
+/// A single gas validation error.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GasValidationError {
+    /// Step index in struct_logs.
+    pub step_index: usize,
+    /// Program counter.
+    pub pc: u64,
+    /// Opcode name.
+    pub opcode: String,
+    /// Expected gas cost (gas_before - gas_after).
+    pub expected_gas_cost: u64,
+    /// Reported gas cost from gasCost field.
+    pub reported_gas_cost: u64,
+    /// Explanation message.
+    pub message: String,
 }
 use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_evm::ConfigureEvm;
@@ -96,16 +145,21 @@ pub struct TracedExecution {
 }
 
 /// Extract used opcodes from tracing inspector traces.
+/// Returns a map of opcode name to (count, total_gas_cost).
 fn extract_used_opcodes_from_traces(
     inspector: &revm_inspectors::tracing::TracingInspector,
-) -> HashMap<u8, u64> {
+) -> HashMap<String, (u64, u64)> {
     let traces = inspector.traces();
-    let mut opcode_counts: HashMap<u8, u64> = HashMap::default();
+    let mut opcode_counts: HashMap<String, (u64, u64)> = HashMap::default();
 
     for node in traces.nodes() {
         for step in &node.trace.steps {
-            let opcode_byte = step.op.get();
-            *opcode_counts.entry(opcode_byte).or_insert(0) += 1;
+            // Use human-readable opcode name instead of hex
+            let opcode_name = get_opcode_name(step.op.get()).to_string();
+            // Accumulate count and gas cost
+            let (count, total_gas) = opcode_counts.entry(opcode_name).or_insert((0, 0));
+            *count += 1;
+            *total_gas += step.gas_cost as u64;
         }
     }
 
@@ -116,9 +170,9 @@ fn extract_used_opcodes_from_traces(
 /// Returns a map of precompile address (1-9) to (count, total_gas_cost).
 fn extract_used_precompiles_from_traces(
     inspector: &revm_inspectors::tracing::TracingInspector,
-) -> HashMap<u8, (u64, u64)> {
+) -> HashMap<u8, (u64, f64)> {
     let traces = inspector.traces();
-    let mut precompile_data: HashMap<u8, (u64, u64)> = HashMap::default();
+    let mut precompile_data: HashMap<u8, (u64, f64)> = HashMap::default();
 
     for node in traces.nodes() {
         for step in &node.trace.steps {
@@ -135,9 +189,9 @@ fn extract_used_precompiles_from_traces(
                         // Check if it's a precompile (0x01 to 0x09)
                         if (1..=9).contains(&addr_byte) {
                             let (count, total_gas) =
-                                precompile_data.entry(addr_byte).or_insert((0, 0));
+                                precompile_data.entry(addr_byte).or_insert((0, 0.0));
                             *count += 1;
-                            *total_gas += step.gas_cost as u64;
+                            *total_gas += step.gas_cost as f64;
                         }
                     }
                 }
@@ -146,6 +200,106 @@ fn extract_used_precompiles_from_traces(
     }
 
     precompile_data
+}
+
+/// Convert opcode counts to OpcodeUsageStats with calculated averages.
+fn convert_to_opcode_stats(
+    opcode_counts: &HashMap<String, (u64, u64)>,
+) -> HashMap<String, OpcodeUsageStats> {
+    opcode_counts
+        .iter()
+        .map(|(name, &(count, total_gas))| {
+            let avg_gas = if count > 0 {
+                total_gas as f64 / count as f64
+            } else {
+                0.0
+            };
+            (
+                name.clone(),
+                OpcodeUsageStats {
+                    count,
+                    total_gas,
+                    avg_gas,
+                },
+            )
+        })
+        .collect()
+}
+
+/// Validate gas consistency across struct_logs.
+/// Checks that gasCost == gas_before - gas_after for consecutive steps at the same depth.
+fn validate_gas_consistency(struct_logs: &[StructLog]) -> GasValidationResult {
+    let mut errors = Vec::new();
+    let mut steps_validated = 0;
+
+    for (i, log) in struct_logs.iter().enumerate() {
+        // Skip the last step (no next step to compare)
+        if i + 1 >= struct_logs.len() {
+            break;
+        }
+
+        let next_log = &struct_logs[i + 1];
+
+        // Only validate steps at the same depth (within same execution frame)
+        if next_log.depth != log.depth {
+            // Frame transition (CALL, CREATE, RETURN, etc.) - skip validation
+            // Gas accounting across frames is complex due to stipend, 63/64 rule, etc.
+            continue;
+        }
+
+        steps_validated += 1;
+
+        let gas_before = log.gas;
+        let gas_after = next_log.gas;
+        let reported_gas_cost = log.gas_cost;
+
+        // Calculate expected gas cost
+        let expected_gas_cost = gas_before.saturating_sub(gas_after);
+
+        // Check for mismatch
+        if expected_gas_cost != reported_gas_cost {
+            // log.op is a Cow<str> containing the opcode name
+            let opcode_name = log.op.as_ref();
+
+            // Get the opcode byte value to check if it's a CALL opcode
+            let opcode_byte = get_opcode_value(opcode_name);
+            let is_call = opcode_byte.map(is_call_opcode).unwrap_or(false);
+
+            let message = if is_call {
+                format!(
+                    "Gas mismatch at step {} ({}): reported gasCost={} but gas diff={}. \
+                     Note: CALL opcodes have complex gas forwarding rules.",
+                    i, opcode_name, reported_gas_cost, expected_gas_cost
+                )
+            } else {
+                format!(
+                    "Gas mismatch at step {} ({}): reported gasCost={} but gas diff={}",
+                    i, opcode_name, reported_gas_cost, expected_gas_cost
+                )
+            };
+
+            // Limit errors to first 10 to avoid huge output
+            if errors.len() < 10 {
+                errors.push(GasValidationError {
+                    step_index: i,
+                    pc: log.pc,
+                    opcode: opcode_name.to_string(),
+                    expected_gas_cost,
+                    reported_gas_cost,
+                    message,
+                });
+            }
+        }
+    }
+
+    let inconsistencies = errors.len();
+
+    GasValidationResult {
+        valid: errors.is_empty(),
+        steps_validated,
+        inconsistencies,
+        errors,
+    }
 }
 
 /// Trace a block execution with full EIP-3155 output.
@@ -368,22 +522,40 @@ where
                     value: Some(tx_env.value),
                     accessed_slots: alloy_rpc_types_trace::geth::erc7562::AccessedSlots::default(),
                     ext_code_access_info: vec![],
-                    used_opcodes,
+                    used_opcodes: used_opcodes
+                        .iter()
+                        .filter_map(|(name, (count, _))| {
+                            // Convert opcode name back to byte value for Erc7562Frame
+                            get_opcode_value(name).map(|byte| (byte, *count))
+                        })
+                        .collect(),
                     contract_size: alloy_primitives::map::HashMap::default(),
                     out_of_gas: is_out_of_gas,
                     keccak: vec![],
                     calls: vec![], // TODO: Extract nested calls from traces
                 };
 
+                // Convert opcode stats to named format with averages
+                let used_opcodes_named = convert_to_opcode_stats(&used_opcodes);
+
+                // Perform gas validation on struct_logs
+                let gas_validation = if !struct_logs.is_empty() {
+                    Some(validate_gas_consistency(&struct_logs))
+                } else {
+                    None
+                };
+
                 let custom_frame = CustomErc7562Frame {
                     base: erc_frame,
                     struct_logs,
+                    used_opcodes_named,
+                    gas_validation,
                 };
 
                 // Generate summary if requested
                 let summary = if trace_config.include_summary {
-                    // Use the used_opcodes from the ERC-7562 frame for summary statistics
-                    summary_accumulator.process_used_opcodes(&custom_frame.base.used_opcodes);
+                    // Use the extracted opcodes and precompiles for summary statistics
+                    summary_accumulator.process_used_opcodes(&used_opcodes);
                     summary_accumulator.process_used_precompiles(&used_precompiles);
                     Some(summary_accumulator.generate_summary())
                 } else {

@@ -3,6 +3,7 @@
 //! This module provides types and utilities for writing EIP-3155 compliant
 //! execution traces in JSONL format.
 
+use crate::opcodes::{get_opcode_name, get_precompile_name as opcodes_get_precompile_name};
 use alloy_consensus::BlockHeader;
 use alloy_primitives::{B256, map::HashMap as AlloyHashMap};
 
@@ -227,7 +228,7 @@ pub struct OpcodeSummary {
     /// Number of times this opcode was executed.
     pub count: u64,
     /// Total gas cost for all executions of this opcode.
-    pub total_gas_cost: u64,
+    pub total_gas_cost: f64,
     /// Average gas cost per execution.
     pub average_gas_cost: f64,
 }
@@ -242,7 +243,7 @@ pub struct PrecompileSummary {
     /// Number of times this precompile was called.
     pub count: u64,
     /// Total gas cost for all calls to this precompile.
-    pub total_gas_cost: u64,
+    pub total_gas_cost: f64,
     /// Average gas cost per call.
     pub average_gas_cost: f64,
 }
@@ -253,13 +254,13 @@ pub struct TransactionSummary {
     /// Total number of opcodes executed.
     pub total_opcodes: u64,
     /// Total gas cost for all opcodes.
-    pub total_gas_cost: u64,
+    pub total_gas_cost: f64,
     /// Breakdown by opcode.
     pub opcode_breakdown: Vec<OpcodeSummary>,
     /// Total number of precompile calls.
     pub total_precompiles: u64,
     /// Total gas cost for all precompile calls.
-    pub total_precompile_gas: u64,
+    pub total_precompile_gas: f64,
     /// Breakdown by precompile.
     pub precompile_breakdown: Vec<PrecompileSummary>,
 }
@@ -268,17 +269,17 @@ pub struct TransactionSummary {
 #[derive(Debug, Default)]
 pub struct SummaryAccumulator {
     /// Map of opcode to (count, total_gas_cost).
-    opcode_data: HashMap<String, (u64, u64)>,
+    opcode_data: HashMap<String, (u64, f64)>,
     /// Map of precompile address to (count, total_gas_cost).
-    precompile_data: AlloyHashMap<u8, (u64, u64)>,
+    precompile_data: AlloyHashMap<u8, (u64, f64)>,
     /// Total number of opcodes executed.
     total_opcodes: u64,
     /// Total gas cost for all opcodes.
-    total_gas_cost: u64,
+    total_gas_cost: f64,
     /// Total number of precompile calls.
     total_precompiles: u64,
     /// Total gas cost for all precompile calls.
-    total_precompile_gas: u64,
+    total_precompile_gas: f64,
 }
 
 impl SummaryAccumulator {
@@ -291,28 +292,43 @@ impl SummaryAccumulator {
     pub fn process_trace(&mut self, frames: &[Erc7562Frame]) {
         for frame in frames {
             for (&opcode, &count) in &frame.used_opcodes {
-                let opcode_name = format!("0x{:x}", opcode);
-                self.opcode_data.entry(opcode_name).or_insert((0, 0)).0 += count;
-                self.total_opcodes += count as u64;
+                // Use human-readable opcode name instead of hex
+                let opcode_name = get_opcode_name(opcode).to_string();
+                self.opcode_data.entry(opcode_name).or_insert((0, 0.0)).0 += count;
+                self.total_opcodes += count;
                 // gas_cost not available, so total_gas_cost remains 0
             }
         }
     }
 
+    /// Process used opcodes and accumulate statistics.
+    pub fn process_used_opcodes(&mut self, used_opcodes: &AlloyHashMap<String, (u64, u64)>) {
+        for (opcode, &(count, gas)) in used_opcodes {
+            let avg_gas = gas as f64 / count as f64;
+            for _ in 0..count {
+                self.accumulate_opcode(opcode, avg_gas);
+            }
+        }
+    }
+
     /// Process used opcodes from an Erc7562Frame and accumulate statistics.
-    pub fn process_used_opcodes(&mut self, used_opcodes: &alloy_primitives::map::HashMap<u8, u64>) {
+    pub fn process_used_opcodes_u8(
+        &mut self,
+        used_opcodes: &alloy_primitives::map::HashMap<u8, u64>,
+    ) {
         for (&opcode, &count) in used_opcodes {
-            let opcode_name = format!("0x{:x}", opcode);
-            self.opcode_data.entry(opcode_name).or_insert((0, 0)).0 += count;
+            // Use human-readable opcode name instead of hex
+            let opcode_name = get_opcode_name(opcode).to_string();
+            self.opcode_data.entry(opcode_name).or_insert((0, 0.0)).0 += count;
             self.total_opcodes += count as u64;
         }
     }
 
     /// Process used precompiles and accumulate statistics.
-    pub fn process_used_precompiles(&mut self, used_precompiles: &AlloyHashMap<u8, (u64, u64)>) {
+    pub fn process_used_precompiles(&mut self, used_precompiles: &AlloyHashMap<u8, (u64, f64)>) {
         for (&precompile, &(count, gas)) in used_precompiles {
             let (existing_count, existing_gas) =
-                self.precompile_data.entry(precompile).or_insert((0, 0));
+                self.precompile_data.entry(precompile).or_insert((0, 0.0));
             *existing_count += count;
             *existing_gas += gas;
             self.total_precompiles += count;
@@ -321,8 +337,11 @@ impl SummaryAccumulator {
     }
 
     /// Accumulate data for a single opcode execution.
-    fn accumulate_opcode(&mut self, opcode: &str, gas_cost: u64) {
-        let (count, total_cost) = self.opcode_data.entry(opcode.to_string()).or_insert((0, 0));
+    fn accumulate_opcode(&mut self, opcode: &str, gas_cost: f64) {
+        let (count, total_cost) = self
+            .opcode_data
+            .entry(opcode.to_string())
+            .or_insert((0, 0.0));
 
         *count += 1;
         *total_cost += gas_cost;
@@ -348,7 +367,11 @@ impl SummaryAccumulator {
             .collect();
 
         // Sort by total gas cost descending (most expensive opcodes first)
-        opcode_breakdown.sort_by(|a, b| b.total_gas_cost.cmp(&a.total_gas_cost));
+        opcode_breakdown.sort_by(|a, b| {
+            b.total_gas_cost
+                .partial_cmp(&a.total_gas_cost)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         let mut precompile_breakdown: Vec<PrecompileSummary> = self
             .precompile_data
@@ -367,7 +390,11 @@ impl SummaryAccumulator {
             .collect();
 
         // Sort by total gas cost descending (most expensive precompiles first)
-        precompile_breakdown.sort_by(|a, b| b.total_gas_cost.cmp(&a.total_gas_cost));
+        precompile_breakdown.sort_by(|a, b| {
+            b.total_gas_cost
+                .partial_cmp(&a.total_gas_cost)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         TransactionSummary {
             total_opcodes: self.total_opcodes,
@@ -381,18 +408,8 @@ impl SummaryAccumulator {
 
     /// Get the name of a precompile from its address.
     fn get_precompile_name(address: u8) -> &'static str {
-        match address {
-            1 => "ecrecover",
-            2 => "sha256",
-            3 => "ripemd160",
-            4 => "identity",
-            5 => "modexp",
-            6 => "ecadd",
-            7 => "ecmul",
-            8 => "ecpairing",
-            9 => "blake2f",
-            _ => "unknown",
-        }
+        // Use the centralized opcode module for precompile names
+        opcodes_get_precompile_name(address)
     }
 
     /// Reset the accumulator for a new transaction.
@@ -400,8 +417,8 @@ impl SummaryAccumulator {
         self.opcode_data.clear();
         self.precompile_data.clear();
         self.total_opcodes = 0;
-        self.total_gas_cost = 0;
+        self.total_gas_cost = 0.0;
         self.total_precompiles = 0;
-        self.total_precompile_gas = 0;
+        self.total_precompile_gas = 0.0;
     }
 }
