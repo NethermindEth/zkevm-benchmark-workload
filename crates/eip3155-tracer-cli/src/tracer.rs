@@ -53,7 +53,7 @@ impl Default for TraceConfig {
             include_refund: false,
             include_summary: false,
             summary_only: false,
-            pretty_print: false,
+            pretty_print: true,
         }
     }
 }
@@ -71,7 +71,7 @@ impl TraceConfig {
             include_refund: true,
             include_summary: true,
             summary_only: false,
-            pretty_print: false,
+            pretty_print: true,
         }
     }
 }

@@ -112,6 +112,42 @@ fn extract_used_opcodes_from_traces(
     opcode_counts
 }
 
+/// Extract used precompiles from tracing inspector traces.
+/// Returns a map of precompile address (1-9) to (count, total_gas_cost).
+fn extract_used_precompiles_from_traces(
+    inspector: &revm_inspectors::tracing::TracingInspector,
+) -> HashMap<u8, (u64, u64)> {
+    let traces = inspector.traces();
+    let mut precompile_data: HashMap<u8, (u64, u64)> = HashMap::default();
+
+    for node in traces.nodes() {
+        for step in &node.trace.steps {
+            let opcode = step.op.get();
+            // Check for CALL (0xf1), CALLCODE (0xf2), DELEGATECALL (0xf4), STATICCALL (0xfa)
+            if matches!(opcode, 0xf1 | 0xf2 | 0xf4 | 0xfa) {
+                if let Some(stack) = &step.stack {
+                    if stack.len() >= 2 {
+                        // For CALL operations, address is at stack[stack.len() - 2] before popping
+                        let addr_idx = stack.len() - 2;
+                        let addr = stack[addr_idx];
+                        let addr_byte = addr.to_be_bytes::<32>()[31]; // Extract last byte as address
+
+                        // Check if it's a precompile (0x01 to 0x09)
+                        if (1..=9).contains(&addr_byte) {
+                            let (count, total_gas) =
+                                precompile_data.entry(addr_byte).or_insert((0, 0));
+                            *count += 1;
+                            *total_gas += step.gas_cost as u64;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    precompile_data
+}
+
 /// Trace a block execution with full EIP-3155 output.
 ///
 /// This function executes all transactions in a block while collecting
@@ -296,7 +332,9 @@ where
                     };
 
                 let to = match tx_env.kind {
-                    reth_revm::primitives::TxKind::Call(addr) => Some(Address::from_slice(addr.as_ref())),
+                    reth_revm::primitives::TxKind::Call(addr) => {
+                        Some(Address::from_slice(addr.as_ref()))
+                    }
                     _ => None,
                 };
 
@@ -305,6 +343,9 @@ where
 
                 // Extract used opcodes from trace steps
                 let used_opcodes = extract_used_opcodes_from_traces(&inspector);
+
+                // Extract used precompiles from trace steps
+                let used_precompiles = extract_used_precompiles_from_traces(&inspector);
 
                 // TODO: Extract other complex fields from inspector traces
                 // - accessed_slots: Currently using default, will implement future extraction
@@ -343,6 +384,7 @@ where
                 let summary = if trace_config.include_summary {
                     // Use the used_opcodes from the ERC-7562 frame for summary statistics
                     summary_accumulator.process_used_opcodes(&custom_frame.base.used_opcodes);
+                    summary_accumulator.process_used_precompiles(&used_precompiles);
                     Some(summary_accumulator.generate_summary())
                 } else {
                     None

@@ -4,7 +4,7 @@
 //! execution traces in JSONL format.
 
 use alloy_consensus::BlockHeader;
-use alloy_primitives::B256;
+use alloy_primitives::{B256, map::HashMap as AlloyHashMap};
 
 use alloy_rpc_types_trace::geth::GethTrace;
 use alloy_rpc_types_trace::geth::erc7562::Erc7562Frame;
@@ -232,6 +232,21 @@ pub struct OpcodeSummary {
     pub average_gas_cost: f64,
 }
 
+/// Summary statistics for precompile execution.
+#[derive(Debug, Clone, Serialize)]
+pub struct PrecompileSummary {
+    /// Precompile address (1-9).
+    pub address: u8,
+    /// Precompile name (e.g., "ecrecover", "sha256").
+    pub name: String,
+    /// Number of times this precompile was called.
+    pub count: u64,
+    /// Total gas cost for all calls to this precompile.
+    pub total_gas_cost: u64,
+    /// Average gas cost per call.
+    pub average_gas_cost: f64,
+}
+
 /// Summary statistics for a transaction.
 #[derive(Debug, Clone, Serialize)]
 pub struct TransactionSummary {
@@ -241,6 +256,12 @@ pub struct TransactionSummary {
     pub total_gas_cost: u64,
     /// Breakdown by opcode.
     pub opcode_breakdown: Vec<OpcodeSummary>,
+    /// Total number of precompile calls.
+    pub total_precompiles: u64,
+    /// Total gas cost for all precompile calls.
+    pub total_precompile_gas: u64,
+    /// Breakdown by precompile.
+    pub precompile_breakdown: Vec<PrecompileSummary>,
 }
 
 /// Accumulator for generating summary statistics.
@@ -248,10 +269,16 @@ pub struct TransactionSummary {
 pub struct SummaryAccumulator {
     /// Map of opcode to (count, total_gas_cost).
     opcode_data: HashMap<String, (u64, u64)>,
+    /// Map of precompile address to (count, total_gas_cost).
+    precompile_data: AlloyHashMap<u8, (u64, u64)>,
     /// Total number of opcodes executed.
     total_opcodes: u64,
     /// Total gas cost for all opcodes.
     total_gas_cost: u64,
+    /// Total number of precompile calls.
+    total_precompiles: u64,
+    /// Total gas cost for all precompile calls.
+    total_precompile_gas: u64,
 }
 
 impl SummaryAccumulator {
@@ -278,6 +305,18 @@ impl SummaryAccumulator {
             let opcode_name = format!("0x{:x}", opcode);
             self.opcode_data.entry(opcode_name).or_insert((0, 0)).0 += count;
             self.total_opcodes += count as u64;
+        }
+    }
+
+    /// Process used precompiles and accumulate statistics.
+    pub fn process_used_precompiles(&mut self, used_precompiles: &AlloyHashMap<u8, (u64, u64)>) {
+        for (&precompile, &(count, gas)) in used_precompiles {
+            let (existing_count, existing_gas) =
+                self.precompile_data.entry(precompile).or_insert((0, 0));
+            *existing_count += count;
+            *existing_gas += gas;
+            self.total_precompiles += count;
+            self.total_precompile_gas += gas;
         }
     }
 
@@ -311,17 +350,58 @@ impl SummaryAccumulator {
         // Sort by total gas cost descending (most expensive opcodes first)
         opcode_breakdown.sort_by(|a, b| b.total_gas_cost.cmp(&a.total_gas_cost));
 
+        let mut precompile_breakdown: Vec<PrecompileSummary> = self
+            .precompile_data
+            .iter()
+            .map(|(&address, &(count, total_cost))| PrecompileSummary {
+                address,
+                name: Self::get_precompile_name(address).to_string(),
+                count,
+                total_gas_cost: total_cost,
+                average_gas_cost: if count > 0 {
+                    total_cost as f64 / count as f64
+                } else {
+                    0.0
+                },
+            })
+            .collect();
+
+        // Sort by total gas cost descending (most expensive precompiles first)
+        precompile_breakdown.sort_by(|a, b| b.total_gas_cost.cmp(&a.total_gas_cost));
+
         TransactionSummary {
             total_opcodes: self.total_opcodes,
             total_gas_cost: self.total_gas_cost,
             opcode_breakdown,
+            total_precompiles: self.total_precompiles,
+            total_precompile_gas: self.total_precompile_gas,
+            precompile_breakdown,
+        }
+    }
+
+    /// Get the name of a precompile from its address.
+    fn get_precompile_name(address: u8) -> &'static str {
+        match address {
+            1 => "ecrecover",
+            2 => "sha256",
+            3 => "ripemd160",
+            4 => "identity",
+            5 => "modexp",
+            6 => "ecadd",
+            7 => "ecmul",
+            8 => "ecpairing",
+            9 => "blake2f",
+            _ => "unknown",
         }
     }
 
     /// Reset the accumulator for a new transaction.
     pub fn reset(&mut self) {
         self.opcode_data.clear();
+        self.precompile_data.clear();
         self.total_opcodes = 0;
         self.total_gas_cost = 0;
+        self.total_precompiles = 0;
+        self.total_precompile_gas = 0;
     }
 }
