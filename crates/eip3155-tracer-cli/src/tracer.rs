@@ -37,6 +37,8 @@ pub(crate) struct TraceConfig {
     pub include_summary: bool,
     /// Generate only summary statistics (no structLogs).
     pub summary_only: bool,
+    /// Minimal output: only write the summary object (no transaction wrapper, block markers, or traces).
+    pub minimal: bool,
     /// Pretty-print JSON output.
     pub pretty_print: bool,
 }
@@ -53,6 +55,7 @@ impl Default for TraceConfig {
             include_refund: false,
             include_summary: false,
             summary_only: false,
+            minimal: false,
             pretty_print: true,
         }
     }
@@ -71,6 +74,7 @@ impl TraceConfig {
             include_refund: true,
             include_summary: true,
             summary_only: false,
+            minimal: false,
             pretty_print: true,
         }
     }
@@ -150,6 +154,7 @@ fn trace_single_fixture(
         .with_context(|| format!("Failed to recover signers for fixture: {}", fixture.name))?;
 
     // Create trace output configuration
+    // In minimal mode, we need include_summary to be true to generate the summary data
     let trace_output = TraceOutput {
         include_stack: config.include_stack,
         include_memory: config.include_memory,
@@ -158,8 +163,9 @@ fn trace_single_fixture(
         include_gas: config.include_gas,
         include_depth: config.include_depth,
         include_refund: config.include_refund,
-        include_summary: config.include_summary,
+        include_summary: config.include_summary || config.minimal,
         summary_only: config.summary_only,
+        minimal: config.minimal,
         pretty_print: config.pretty_print,
     };
 

@@ -43,6 +43,7 @@ fn main() -> Result<()> {
             include_refund: cli.include_refund,
             include_summary: cli.include_summary,
             summary_only: cli.summary_only,
+            minimal: cli.minimal,
             pretty_print: cli.pretty_print,
         }
     };

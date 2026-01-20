@@ -39,6 +39,8 @@ pub struct TraceOutput {
     pub include_summary: bool,
     /// Generate only summary statistics (no structLogs).
     pub summary_only: bool,
+    /// Minimal output: only write the summary object (no transaction wrapper, block markers, or traces).
+    pub minimal: bool,
     /// Pretty-print JSON output.
     pub pretty_print: bool,
 }
@@ -56,6 +58,7 @@ impl Default for TraceOutput {
             include_refund: false,
             include_summary: false,
             summary_only: false,
+            minimal: false,
             pretty_print: true,
         }
     }
@@ -98,7 +101,13 @@ impl<W: Write> TraceWriter<W> {
     }
 
     /// Write block start marker with header information.
+    /// Skipped when minimal mode is enabled.
     pub fn write_block_start(&mut self, block: &RecoveredBlock<Block>) -> std::io::Result<()> {
+        // Skip block markers in minimal mode
+        if self.config.minimal {
+            return Ok(());
+        }
+
         #[derive(Serialize)]
         struct BlockStartData {
             #[serde(rename = "type")]
@@ -124,6 +133,7 @@ impl<W: Write> TraceWriter<W> {
     }
 
     /// Write a full transaction trace in EIP-3155 format.
+    /// In minimal mode, only the summary object is written (no wrapper).
     pub fn write_transaction_trace(
         &mut self,
         tx_index: usize,
@@ -131,6 +141,15 @@ impl<W: Write> TraceWriter<W> {
         trace: &GethTrace,
         summary: Option<TransactionSummary>,
     ) -> std::io::Result<()> {
+        // In minimal mode, only write the summary object directly (no wrapper)
+        if self.config.minimal {
+            if let Some(ref sum) = summary {
+                return self.write_json(sum);
+            }
+            // If no summary available in minimal mode, skip this transaction
+            return Ok(());
+        }
+
         #[derive(Serialize)]
         struct TransactionTrace<'a> {
             #[serde(rename = "type")]
@@ -185,7 +204,13 @@ impl<W: Write> TraceWriter<W> {
     }
 
     /// Write block end marker with summary.
+    /// Skipped when minimal mode is enabled.
     pub fn write_block_end(&mut self, gas_used: u64, tx_count: usize) -> std::io::Result<()> {
+        // Skip block markers in minimal mode
+        if self.config.minimal {
+            return Ok(());
+        }
+
         #[derive(Serialize)]
         struct BlockEnd {
             #[serde(rename = "type")]
