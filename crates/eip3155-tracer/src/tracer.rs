@@ -146,6 +146,12 @@ pub struct TracedExecution {
 
 /// Extract used opcodes from tracing inspector traces.
 /// Returns a map of opcode name to (count, total_gas_cost).
+///
+/// For CALL/DELEGATECALL/STATICCALL/CALLCODE opcodes, this function calculates
+/// the **actual** gas consumed rather than using the reported `gasCost`.
+/// The reported `gasCost` includes gas forwarded to the subcall, but unused gas
+/// is returned when the subcall completes. This function computes:
+/// `actual_gas = gas_before_call - gas_after_return`
 fn extract_used_opcodes_from_traces(
     inspector: &revm_inspectors::tracing::TracingInspector,
 ) -> HashMap<String, (u64, u64)> {
@@ -153,21 +159,74 @@ fn extract_used_opcodes_from_traces(
     let mut opcode_counts: HashMap<String, (u64, u64)> = HashMap::default();
 
     for node in traces.nodes() {
-        for step in &node.trace.steps {
-            // Use human-readable opcode name instead of hex
-            let opcode_name = get_opcode_name(step.op.get()).to_string();
+        let steps = &node.trace.steps;
+        let num_steps = steps.len();
+
+        for (i, step) in steps.iter().enumerate() {
+            let opcode = step.op.get();
+            let opcode_name = get_opcode_name(opcode).to_string();
+
+            // Check if this is a CALL-type opcode
+            // CALL (0xf1), CALLCODE (0xf2), DELEGATECALL (0xf4), STATICCALL (0xfa)
+            let is_call_type = matches!(opcode, 0xf1 | 0xf2 | 0xf4 | 0xfa);
+
+            let gas_cost = if is_call_type {
+                // For CALL opcodes, calculate actual gas consumed by finding the next step
+                // in the same node (after subcall returns)
+                calculate_actual_call_gas_cost(steps, i, num_steps)
+            } else {
+                step.gas_cost as u64
+            };
+
             // Accumulate count and gas cost
             let (count, total_gas) = opcode_counts.entry(opcode_name).or_insert((0, 0));
             *count += 1;
-            *total_gas += step.gas_cost as u64;
+            *total_gas += gas_cost;
         }
     }
 
     opcode_counts
 }
 
+/// Calculate the actual gas consumed by a CALL opcode.
+///
+/// The EIP-3155 `gasCost` for CALL opcodes includes the gas forwarded to the subcall,
+/// but when the subcall returns, unused gas is credited back to the caller.
+///
+/// In revm-inspectors, each CallTraceNode contains steps at the same call depth.
+/// When a CALL opcode executes, a child node is created for the subcall.
+/// The next step in the current node is executed after the subcall returns.
+///
+/// This function calculates: `actual_gas = call_step.gas - next_step.gas`
+///
+/// If there's no next step (e.g., CALL is the last operation), falls back to `gasCost`.
+fn calculate_actual_call_gas_cost(
+    steps: &[revm_inspectors::tracing::types::CallTraceStep],
+    call_idx: usize,
+    num_steps: usize,
+) -> u64 {
+    let call_step = &steps[call_idx];
+    let gas_before = call_step.gas_remaining;
+
+    // The next step in the same node is executed after the subcall returns
+    if call_idx + 1 < num_steps {
+        let next_step = &steps[call_idx + 1];
+        let gas_after = next_step.gas_remaining;
+        // Actual gas consumed = gas before call - gas after return
+        return gas_before.saturating_sub(gas_after);
+    }
+
+    // Fallback: if there's no next step, use the reported gas_cost
+    // This can happen if the CALL is the last operation in the frame
+    call_step.gas_cost as u64
+}
+
 /// Extract used precompiles from tracing inspector traces.
 /// Returns a map of precompile address (1-9) to (count, total_gas_cost).
+///
+/// For precompile calls (which are CALL opcodes to addresses 0x01-0x09), this function
+/// calculates the **actual** gas consumed rather than using the reported `gasCost`.
+/// See `calculate_actual_call_gas_cost` for details on why this is necessary.
 fn extract_used_precompiles_from_traces(
     inspector: &revm_inspectors::tracing::TracingInspector,
 ) -> HashMap<u8, (u64, f64)> {
@@ -175,7 +234,10 @@ fn extract_used_precompiles_from_traces(
     let mut precompile_data: HashMap<u8, (u64, f64)> = HashMap::default();
 
     for node in traces.nodes() {
-        for step in &node.trace.steps {
+        let steps = &node.trace.steps;
+        let num_steps = steps.len();
+
+        for (i, step) in steps.iter().enumerate() {
             let opcode = step.op.get();
             // Check for CALL (0xf1), CALLCODE (0xf2), DELEGATECALL (0xf4), STATICCALL (0xfa)
             if matches!(opcode, 0xf1 | 0xf2 | 0xf4 | 0xfa) {
@@ -188,10 +250,14 @@ fn extract_used_precompiles_from_traces(
 
                         // Check if it's a precompile (0x01 to 0x09)
                         if (1..=9).contains(&addr_byte) {
+                            // Calculate actual gas consumed for this precompile call
+                            let gas_cost =
+                                calculate_actual_call_gas_cost(steps, i, num_steps) as f64;
+
                             let (count, total_gas) =
                                 precompile_data.entry(addr_byte).or_insert((0, 0.0));
                             *count += 1;
-                            *total_gas += step.gas_cost as f64;
+                            *total_gas += gas_cost;
                         }
                     }
                 }
