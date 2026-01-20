@@ -6,7 +6,8 @@
 use alloy_consensus::BlockHeader;
 use alloy_primitives::B256;
 
-use alloy_rpc_types_trace::geth::{GethTrace, StructLog};
+use alloy_rpc_types_trace::geth::GethTrace;
+use alloy_rpc_types_trace::geth::erc7562::Erc7562Frame;
 use reth_ethereum_primitives::Block;
 use reth_primitives_traits::RecoveredBlock;
 use serde::Serialize;
@@ -54,7 +55,7 @@ impl Default for TraceOutput {
             include_refund: false,
             include_summary: false,
             summary_only: false,
-            pretty_print: false,
+            pretty_print: true,
         }
     }
 }
@@ -260,9 +261,14 @@ impl SummaryAccumulator {
     }
 
     /// Process a Geth trace and accumulate statistics.
-    pub fn process_trace(&mut self, struct_logs: &[StructLog]) {
-        for log in struct_logs {
-            self.accumulate_opcode(&log.op, log.gas_cost);
+    pub fn process_trace(&mut self, frames: &[Erc7562Frame]) {
+        for frame in frames {
+            for (&opcode, &count) in &frame.used_opcodes {
+                let opcode_name = format!("0x{:x}", opcode);
+                self.opcode_data.entry(opcode_name).or_insert((0, 0)).0 += count;
+                self.total_opcodes += count as u64;
+                // gas_cost not available, so total_gas_cost remains 0
+            }
         }
     }
 
