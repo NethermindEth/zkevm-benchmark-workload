@@ -2710,6 +2710,8 @@ dependencies = [
  "reth-primitives-traits",
  "reth-revm",
  "reth-stateless",
+ "revm",
+ "revm-context-interface",
  "revm-inspectors",
  "serde",
  "serde_json",

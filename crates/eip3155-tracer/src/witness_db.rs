@@ -41,7 +41,7 @@ where
     }
 }
 
-impl<T> Database for WitnessDatabase<'_, T>
+impl<'a, T> Database for WitnessDatabase<'a, T>
 where
     T: StatelessTrie,
 {

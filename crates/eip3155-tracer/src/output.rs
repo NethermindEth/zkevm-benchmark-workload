@@ -272,6 +272,15 @@ impl SummaryAccumulator {
         }
     }
 
+    /// Process used opcodes from an Erc7562Frame and accumulate statistics.
+    pub fn process_used_opcodes(&mut self, used_opcodes: &alloy_primitives::map::HashMap<u8, u64>) {
+        for (&opcode, &count) in used_opcodes {
+            let opcode_name = format!("0x{:x}", opcode);
+            self.opcode_data.entry(opcode_name).or_insert((0, 0)).0 += count;
+            self.total_opcodes += count as u64;
+        }
+    }
+
     /// Accumulate data for a single opcode execution.
     fn accumulate_opcode(&mut self, opcode: &str, gas_cost: u64) {
         let (count, total_cost) = self.opcode_data.entry(opcode.to_string()).or_insert((0, 0));

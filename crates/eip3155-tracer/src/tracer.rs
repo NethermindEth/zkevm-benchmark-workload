@@ -8,9 +8,12 @@ use crate::witness_db::WitnessDatabase;
 use alloy_consensus::{BlockHeader, Header};
 use alloy_genesis::ChainConfig;
 use alloy_primitives::{Address, B256, keccak256, map::HashMap};
-use alloy_rpc_types_trace::geth::GethTrace;
 
-use alloy_rpc_types_trace::geth::erc7562::{AccessedSlots, CallFrameType, Erc7562Frame};
+use revm_context_interface::result::ExecutionResult;
+
+use alloy_rpc_types_trace::geth::GethTrace;
+use alloy_rpc_types_trace::geth::StructLog;
+use alloy_rpc_types_trace::geth::erc7562::{CallFrameType, Erc7562Frame};
 use reth_chainspec::EthereumHardforks;
 use serde::{Deserialize, Serialize};
 
@@ -19,7 +22,7 @@ use serde::{Deserialize, Serialize};
 pub struct CustomErc7562Frame {
     #[serde(flatten)]
     pub base: Erc7562Frame,
-    pub struct_logs: Vec<Erc7562Frame>,
+    pub struct_logs: Vec<StructLog>,
 }
 use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_evm::ConfigureEvm;
@@ -90,6 +93,23 @@ pub struct TracedExecution {
     pub transaction_count: usize,
     /// Whether all transactions succeeded.
     pub success: bool,
+}
+
+/// Extract used opcodes from tracing inspector traces.
+fn extract_used_opcodes_from_traces(
+    inspector: &revm_inspectors::tracing::TracingInspector,
+) -> HashMap<u8, u64> {
+    let traces = inspector.traces();
+    let mut opcode_counts: HashMap<u8, u64> = HashMap::default();
+
+    for node in traces.nodes() {
+        for step in &node.trace.steps {
+            let opcode_byte = step.op.get();
+            *opcode_counts.entry(opcode_byte).or_insert(0) += 1;
+        }
+    }
+
+    opcode_counts
 }
 
 /// Trace a block execution with full EIP-3155 output.
@@ -236,39 +256,93 @@ where
                     .cloned()
                     .unwrap_or_default();
 
-                // Build ERC-7562 trace with configured options for opcode details
+                // Create GethTraceBuilder from the inspector to extract trace data
+                let geth_builder = inspector.geth_builder();
+
+                // Get the default trace with structLogs for opcode-level details
+                let default_frame = geth_builder.geth_traces(
+                    gas_used,
+                    return_value.clone(),
+                    alloy_rpc_types_trace::geth::GethDefaultTracingOptions {
+                        disable_storage: Some(!trace_config.include_storage),
+                        disable_memory: Some(!trace_config.include_memory),
+                        disable_stack: Some(!trace_config.include_stack),
+                        ..Default::default()
+                    },
+                );
+
+                // Extract structLogs from the default frame
+                let struct_logs = default_frame.struct_logs;
+
+                // Manually construct ERC-7562 frame with data from execution result and traces
+                let call_frame_type =
+                    if matches!(&tx_env.kind, reth_revm::primitives::TxKind::Call(_)) {
+                        CallFrameType::Call
+                    } else {
+                        CallFrameType::Create
+                    };
+
+                let error = if result_and_state.result.is_success() {
+                    None
+                } else {
+                    Some("Execution error".to_string())
+                };
+
+                let revert_reason =
+                    if matches!(result_and_state.result, ExecutionResult::Revert { .. }) {
+                        Some("Revert".to_string())
+                    } else {
+                        None
+                    };
+
+                let to = match tx_env.kind {
+                    reth_revm::primitives::TxKind::Call(addr) => Some(Address::from_slice(addr.as_ref())),
+                    _ => None,
+                };
+
+                let is_out_of_gas =
+                    !result_and_state.result.is_success() && gas_used == tx_env.gas_limit;
+
+                // Extract used opcodes from trace steps
+                let used_opcodes = extract_used_opcodes_from_traces(&inspector);
+
+                // TODO: Extract other complex fields from inspector traces
+                // - accessed_slots: Currently using default, will implement future extraction
+                // - ext_code_access_info: Currently using empty, will implement future extraction
+                // - contract_size: Currently using default, will implement future extraction
+                // - keccak: Currently using empty, will implement future extraction
+                // - calls: Currently using empty, will implement future extraction
+
                 let erc_frame = Erc7562Frame {
-                    call_frame_type: CallFrameType::Call,
+                    call_frame_type,
                     from: *sender,
                     gas: tx_env.gas_limit,
                     gas_used,
-                    to: match tx_env.kind {
-                        reth_revm::primitives::TxKind::Call(to) => Some(to),
-                        _ => None,
-                    },
+                    to,
                     input: tx_env.data.clone(),
                     output: Some(return_value),
-                    error: None,
-                    revert_reason: None,
-                    logs: vec![],
+                    error,
+                    revert_reason,
+                    logs: vec![], // TODO: Extract from inspector logs
                     value: Some(tx_env.value),
-                    accessed_slots: AccessedSlots::default(),
+                    accessed_slots: alloy_rpc_types_trace::geth::erc7562::AccessedSlots::default(),
                     ext_code_access_info: vec![],
-                    used_opcodes: HashMap::default(),
-                    contract_size: HashMap::default(),
-                    out_of_gas: false,
+                    used_opcodes,
+                    contract_size: alloy_primitives::map::HashMap::default(),
+                    out_of_gas: is_out_of_gas,
                     keccak: vec![],
-                    calls: vec![],
+                    calls: vec![], // TODO: Extract nested calls from traces
                 };
 
                 let custom_frame = CustomErc7562Frame {
-                    base: erc_frame.clone(),
-                    struct_logs: vec![erc_frame],
+                    base: erc_frame,
+                    struct_logs,
                 };
 
                 // Generate summary if requested
                 let summary = if trace_config.include_summary {
-                    summary_accumulator.process_trace(&custom_frame.struct_logs);
+                    // Use the used_opcodes from the ERC-7562 frame for summary statistics
+                    summary_accumulator.process_used_opcodes(&custom_frame.base.used_opcodes);
                     Some(summary_accumulator.generate_summary())
                 } else {
                     None
