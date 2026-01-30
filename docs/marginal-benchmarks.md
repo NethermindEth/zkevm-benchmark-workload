@@ -93,6 +93,15 @@ RAYON_NUM_THREADS=4 cargo run --release -p witness-generator-cli -- \
 | `--execution-client` | Execution client (`reth`, `ethrex`) | `reth` |
 | `--num-samples` | Number of proving samples for statistics | `3` |
 
+### Monitoring Progress
+
+While benchmarks are running, you can monitor results in another terminal:
+
+```bash
+# Check success/crashed status of completed proofs
+./scripts/check_results.sh "$OUTPUT_DIR/prove/sample-1/reth/<zkvm-version>/"
+```
+
 ### Option A: RISC0 (Multiple GPUs)
 
 ```bash
