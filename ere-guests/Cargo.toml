@@ -176,7 +176,7 @@ ethrex-common = { git = "https://github.com/lambdaclass/ethrex.git", rev = "c68e
 # misc
 bincode = "1.3"
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 sha2 = { version = "0.10.9", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "*", default-features = false }
