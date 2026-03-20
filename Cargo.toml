@@ -178,7 +178,7 @@ tokio-util = "0.7.15"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 rkyv = "0.8.10"
-bytes = "1.10"
+bytes = "1.11"
 erased-serde = "0.4.8"
 once_cell = { version = "1.21", default-features = false }
 auto_impl = "1.3.0"
