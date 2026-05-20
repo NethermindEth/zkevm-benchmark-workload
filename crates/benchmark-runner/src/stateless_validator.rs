@@ -5,7 +5,8 @@ use anyhow::{bail, Context, Result};
 use ere_guests_guest::Guest;
 use ere_guests_integration_tests::NoopPlatform;
 use ere_guests_stateless_validator_ethrex::{
-    guest::StatelessValidatorEthrexGuest, host::build_eip8025_input,
+    guest::StatelessValidatorEthrexGuest,
+    host::{build_eip8025_input, Eip8025InputSource},
 };
 use ere_guests_stateless_validator_reth::guest::{
     StatelessValidatorRethGuest, StatelessValidatorRethInput,
@@ -28,6 +29,8 @@ pub enum ExecutionClient {
     Reth,
     /// Ethrex stateless block validation guest program.
     Ethrex,
+    /// Nethermind stateless block validation guest program (Zisk-only, externally built).
+    Nethermind,
 }
 
 /// Extra information about the block being benchmarked
@@ -44,7 +47,23 @@ impl ExecutionClient {
         match self {
             Self::Reth => env!("RETH_EL_VERSION"),
             Self::Ethrex => env!("ETHREX_EL_VERSION"),
+            Self::Nethermind => "unknown",
         }
+    }
+
+    /// Like [`Self::version`] but for Nethermind also honours a per-build
+    /// sidecar (`<bin_path>/stateless-validator-nethermind-zisk.version`,
+    /// written by `build-nethermind-guest.sh`) or the `NETHERMIND_VERSION`
+    /// env var, in that order.
+    pub fn resolve_version(&self, bin_path: Option<&Path>) -> String {
+        if !matches!(self, Self::Nethermind) { return self.version().to_owned(); }
+        bin_path
+            .and_then(|bp| std::fs::read_to_string(
+                bp.join("stateless-validator-nethermind-zisk.version")).ok())
+            .or_else(|| std::env::var("NETHERMIND_VERSION").ok())
+            .map(|s| s.trim().to_owned())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| self.version().to_owned())
     }
 }
 
@@ -117,7 +136,7 @@ where
             Ok(true) => None,
             Ok(false) => Some(
                 load_benchmark_fixture(&path)
-                    .and_then(|fixture| stateless_validator_input_from_fixture(fixture, el)),
+                    .and_then(|fixture| stateless_validator_input_from_fixture(fixture, &path, el)),
             ),
             Err(err) => Some(Err(err)),
         }
@@ -174,12 +193,66 @@ fn normalize_fixture_prefix(prefix: &str) -> Result<String> {
 
 fn stateless_validator_input_from_fixture(
     fixture: StatelessValidationFixture,
+    fixture_path: &Path,
     el: ExecutionClient,
 ) -> Result<Box<dyn GuestFixture>> {
     match el {
         ExecutionClient::Reth => reth_input_from_fixture(fixture),
         ExecutionClient::Ethrex => ethrex_input_from_fixture(fixture),
+        ExecutionClient::Nethermind => nethermind_input_from_fixture(fixture, fixture_path),
     }
+}
+
+/// Env var pointing at the `StatelessInputGen` binary built by
+/// `build-nethermind-guest.sh`. The Nethermind guest's wire format is
+/// canonically produced by that tool — we shell out per fixture.
+pub const NETHERMIND_INPUT_GEN_ENV: &str = "NETHERMIND_STATELESS_INPUT_GEN";
+
+fn nethermind_input_from_fixture(
+    fixture: StatelessValidationFixture,
+    fixture_path: &Path,
+) -> Result<Box<dyn GuestFixture>> {
+    if !fixture.success {
+        bail!("Nethermind guest only validates success fixtures, skip negative {}", fixture.name);
+    }
+    let stateless_input_gen = std::env::var(NETHERMIND_INPUT_GEN_ENV)
+        .map(PathBuf::from)
+        .with_context(|| format!("{NETHERMIND_INPUT_GEN_ENV} env var must be set"))?;
+
+    // Synthetic forks at time=0 ⇒ emit chain_config envelope so the guest builds
+    // a SpecProvider from it instead of using its hardcoded mainnet schedule.
+    let cfg = &fixture.stateless_input.chain_config;
+    let has_synthetic_timing = cfg.shanghai_time.is_some()
+        || cfg.cancun_time.is_some()
+        || cfg.prague_time.is_some()
+        || cfg.osaka_time.is_some();
+
+    let tmp = tempfile::tempdir().context("tempdir for StatelessInputGen output")?;
+    let mut cmd = std::process::Command::new(&stateless_input_gen);
+    cmd.arg("--from-fixture").arg(fixture_path)
+        .arg("--no-zisk")
+        .arg("--output").arg(tmp.path());
+    if has_synthetic_timing {
+        cmd.arg("--chain-config-envelope");
+    }
+    if !cmd.status().context("spawn StatelessInputGen")?.success() {
+        bail!("StatelessInputGen failed for {}", fixture.name);
+    }
+
+    let block_num = fixture.stateless_input.block.number;
+    let stdin = std::fs::read(tmp.path().join(format!("{block_num}.bin")))?;
+    let expected_public_values = std::fs::read(tmp.path().join(format!("{block_num}.hash")))?;
+
+    // `with_stdin` (not `with_prefixed_stdin`) — the C# guest reads framed
+    // payload directly, no u32 prefix like Rust guests' Platform expects.
+    Ok(Box::new(GenericGuestFixture::<BlockMetadata> {
+        name: fixture.name,
+        input: ere_dockerized::Input::new().with_stdin(stdin),
+        expected_public_values,
+        metadata: BlockMetadata {
+            block_used_gas: fixture.stateless_input.block.gas_used,
+        },
+    }))
 }
 
 fn ethrex_input_from_fixture(fixture: StatelessValidationFixture) -> Result<Box<dyn GuestFixture>> {
@@ -188,8 +261,11 @@ fn ethrex_input_from_fixture(fixture: StatelessValidationFixture) -> Result<Box<
         stateless_input,
         success,
     } = fixture;
-    let input = build_eip8025_input(&stateless_input, success)
-        .context("Failed to create Ethrex stateless validator input")?;
+    let input = build_eip8025_input(Eip8025InputSource::Legacy {
+        stateless_input: &stateless_input,
+        valid_block: success,
+    })
+    .context("Failed to create Ethrex stateless validator input")?;
     let output = StatelessValidatorEthrexGuest::compute::<NoopPlatform>(input.clone());
     let metadata = BlockMetadata {
         block_used_gas: stateless_input.block.gas_used,

@@ -99,12 +99,16 @@ pub enum GuestProgramCommand {
 }
 
 /// Execution clients for the stateless validator
-#[derive(Debug, Copy, Clone, ValueEnum)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ValueEnum)]
 pub enum ExecutionClient {
     /// Reth execution client
     Reth,
     /// Ethrex execution client
     Ethrex,
+    /// Nethermind execution client (C#, Zisk-only, externally built — requires
+    /// `--bin-path` pointing at a directory with
+    /// `stateless-validator-nethermind-zisk.elf`).
+    Nethermind,
 }
 
 impl ExecutionClient {
@@ -113,6 +117,7 @@ impl ExecutionClient {
         let path = match self {
             Self::Reth => "stateless-validator/reth",
             Self::Ethrex => "stateless-validator/ethrex",
+            Self::Nethermind => "stateless-validator/nethermind",
         };
         PathBuf::from(path)
     }
@@ -176,6 +181,7 @@ impl From<ExecutionClient> for stateless_validator::ExecutionClient {
         match client {
             ExecutionClient::Reth => Self::Reth,
             ExecutionClient::Ethrex => Self::Ethrex,
+            ExecutionClient::Nethermind => Self::Nethermind,
         }
     }
 }

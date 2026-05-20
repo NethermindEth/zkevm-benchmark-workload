@@ -1,7 +1,7 @@
 //! Runner for benchmark tests
 
 use anyhow::{anyhow, bail, Context, Result};
-use ere_cluster_client_zisk::{ZiskClusterClient, ZiskProgramVk, ZiskProof};
+use ere_cluster_client_zisk::{ZiskClusterClient, ZiskProof};
 use ere_dockerized::{
     codec::{Decode, Encode},
     zkVMKind, zkVMVerifier, DockerizedzkVM, DockerizedzkVMConfig, Elf, EncodedProof, Input,
@@ -92,8 +92,8 @@ impl ZkVMInstance {
         match self {
             Self::Dockerized(vm) => vm.prove(input),
             Self::ZiskClusterClient { client, .. } => {
-                let (proof, proving_time) = block_on(client.prove(input))?;
-                let public_values = proof.public_values.into();
+                let (proof, proving_time) = block_on(client.prove(input, None))?;
+                let (_, public_values) = proof.program_vk_and_public_values()?;
                 let proof = proof.encode_to_vec()?;
                 Ok((
                     public_values,
@@ -110,7 +110,7 @@ impl ZkVMInstance {
             Self::Dockerized(vm) => vm.verify(proof),
             Self::ZiskClusterClient { client, .. } => {
                 let proof = ZiskProof::decode_from_slice(&proof.0)?;
-                Ok(client.verify(&proof)?)
+                Ok(client.verifier().verify(&proof)?)
             }
         }
     }
@@ -384,9 +384,8 @@ pub async fn get_guest_zkvm_instances(
         let compiled = load_compiled(&guest_name, bin_path).await?;
         let instance = match &resource {
             ProverResource::Cluster(cfg) if *zkvm == zkVMKind::Zisk => {
-                let program_vk = ZiskProgramVk::decode_from_slice(&compiled.program_vk)
-                    .context("Failed to decode Zisk program vk")?;
-                let client = ZiskClusterClient::new(cfg, program_vk)
+                let client = ZiskClusterClient::new(cfg, Elf(compiled.elf.clone()))
+                    .await
                     .map_err(|e| anyhow!("Failed to connect to Zisk cluster: {e}"))?;
                 ZkVMInstance::ZiskClusterClient {
                     elf: Elf(compiled.elf),
@@ -416,8 +415,9 @@ async fn load_compiled(guest_name: &str, bin_path: Option<&Path>) -> Result<Comp
     if let Some(path) = bin_path {
         let elf = fs::read(path.join(format!("{guest_name}.elf")))
             .with_context(|| format!("Failed to read ELF from path: {}", path.display()))?;
-        let program_vk = fs::read(path.join(format!("{guest_name}.vk")))
-            .with_context(|| format!("Failed to read program vk from path: {}", path.display()))?;
+        // .vk is unused since ZiskClusterClient::new derives the verifying key
+        // from the ELF itself; treat the sidecar as best-effort for back-compat.
+        let program_vk = fs::read(path.join(format!("{guest_name}.vk"))).unwrap_or_default();
         return Ok(CompiledGuest { elf, program_vk });
     }
 

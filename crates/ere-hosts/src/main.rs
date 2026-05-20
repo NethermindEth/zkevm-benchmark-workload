@@ -88,6 +88,20 @@ async fn main() -> Result<()> {
         }
     }
 
+    // Nethermind guest is built externally (./build-nethermind-guest.sh) and
+    // only targets Zisk — no ere-guests release artifact to download.
+    if let GuestProgramCommand::StatelessValidator {
+        execution_client: cli::ExecutionClient::Nethermind, ..
+    } = cli.guest_program
+    {
+        if cli.zkvms.iter().any(|z| *z != zkVMKind::Zisk) {
+            anyhow::bail!("--execution-client nethermind requires --zkvms zisk");
+        }
+        if cli.bin_path.is_none() {
+            anyhow::bail!("--execution-client nethermind requires --bin-path");
+        }
+    }
+
     // Resolve proofs source: download from URL or use local folder.
     // _proofs_tmpdir must live until verification completes (drop = cleanup).
     let (_proofs_tmpdir, proofs_folder) = if let Some(ref url) = cli.proofs_url {
@@ -117,7 +131,7 @@ async fn main() -> Result<()> {
             let el: stateless_validator::ExecutionClient = execution_client.into();
 
             let el_name = el.as_ref().to_lowercase();
-            let el_str = format!("{}-{}", el_name, el.version());
+            let el_str = format!("{}-{}", el_name, el.resolve_version(bin_path));
             let zkvms = get_el_zkvm_instances(
                 &el_name,
                 &cli.zkvms,
