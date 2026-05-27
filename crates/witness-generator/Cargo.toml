@@ -6,13 +6,10 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
-reth-stateless.workspace = true
+stateless.workspace = true
 reth-chainspec.workspace = true
 reth-rpc-api = { workspace = true, features = ["client"] }
-reth-ethereum-primitives = { workspace = true, features = [
-    "serde",
-    "serde-bincode-compat",
-] }
+reth-ethereum-primitives = { workspace = true, features = ["serde"] }
 ef-tests.workspace = true
 
 alloy-genesis.workspace = true
@@ -31,6 +28,9 @@ thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 tokio-util = "0.7.15"
+reqwest.workspace = true
+flate2.workspace = true
+tar.workspace = true
 
 
 [dev-dependencies]

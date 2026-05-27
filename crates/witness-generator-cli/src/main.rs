@@ -11,6 +11,7 @@ use tracing_subscriber::EnvFilter;
 use witness_generator::{
     FixtureGenerator,
     eest_generator::EESTFixtureGeneratorBuilder,
+    raw_input_generator::RawInputFixtureGeneratorBuilder,
     rpc_generator::{RpcBlocksAndWitnessesBuilder, RpcFlatHeaderKeyValues},
 };
 
@@ -32,7 +33,8 @@ struct Cli {
 enum SourceCommand {
     /// Generate fixtures from execution specification tests
     Tests {
-        /// EEST release tag to use (e.g., "v0.1.0"). If empty, the latest release will be used.
+        /// EEST benchmark release tag to use.
+        /// If empty, the pinned default release is used. Use "latest" to resolve the latest benchmark release.
         #[arg(short, long, conflicts_with = "eest_fixtures_path")]
         tag: Option<String>,
 
@@ -47,6 +49,12 @@ enum SourceCommand {
         /// Optional input folder for EEST files. If not provided, the tag rule will be used.
         #[arg(long, conflicts_with = "tag")]
         eest_fixtures_path: Option<PathBuf>,
+    },
+    /// Generate fixtures from raw stateless input URLs listed in `raw_input_parts.txt`
+    RawInput {
+        /// Path to the input folder containing `chain_config.json` and `raw_input_parts.txt`
+        #[arg(long)]
+        input_folder: PathBuf,
     },
     /// Generate fixtures from an RPC endpoint
     Rpc {
@@ -69,6 +77,10 @@ enum SourceCommand {
         /// Optional RPC headers to use (format: "Key:Value")
         #[arg(long)]
         rpc_header: Option<Vec<String>>,
+
+        /// Optional path to a geth-style genesis.json file for custom/devnet chain config
+        #[arg(long, value_name = "PATH")]
+        genesis: Option<PathBuf>,
     },
 }
 
@@ -121,14 +133,25 @@ async fn build_generator(source: SourceCommand) -> Result<Box<dyn FixtureGenerat
             }
 
             Ok(Box::new(
-                builder.build().context("Failed to build EEST generator")?,
+                builder
+                    .build()
+                    .await
+                    .context("Failed to build EEST generator")?,
             ))
         }
+        SourceCommand::RawInput { input_folder } => Ok(Box::new(
+            RawInputFixtureGeneratorBuilder::default()
+                .with_input_folder(input_folder)
+                .context("Invalid raw input folder")?
+                .build()
+                .context("Failed to build raw input generator")?,
+        )),
         SourceCommand::Rpc {
             last_n_blocks,
             block,
             rpc_url,
             rpc_header,
+            genesis,
             follow: listen,
         } => {
             let mut builder = RpcBlocksAndWitnessesBuilder::new(rpc_url);
@@ -138,6 +161,10 @@ async fn build_generator(source: SourceCommand) -> Result<Box<dyn FixtureGenerat
                     .try_into()
                     .context("Failed to parse RPC headers")?;
                 builder = builder.with_headers(headers);
+            }
+
+            if let Some(genesis) = genesis {
+                builder = builder.with_genesis(genesis);
             }
 
             if listen {

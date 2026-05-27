@@ -1,16 +1,16 @@
 //! Stateless validator guest program.
 
+mod eest;
+mod fixtures;
+mod inputs;
+
 use crate::guest_programs::GuestFixture;
 use anyhow::Result;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use strum::{AsRefStr, EnumString};
-use walkdir::WalkDir;
-use witness_generator::StatelessValidationFixture;
 
-pub mod ethrex;
-pub mod reth;
+pub use fixtures::{benchmark_fixture_paths, iter_benchmark_fixture_paths, load_benchmark_fixture};
 
 /// Execution client variants.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, EnumString, AsRefStr)]
@@ -25,38 +25,32 @@ pub enum ExecutionClient {
 /// Extra information about the block being benchmarked
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockMetadata {
-    block_used_gas: u64,
+    /// Gas used by the block
+    pub block_used_gas: u64,
 }
 
-/// Prepares the inputs for the stateless validator guest program based on the mode.
-pub fn stateless_validator_inputs(
-    input_folder: &Path,
-    el: ExecutionClient,
-) -> anyhow::Result<Vec<Box<dyn GuestFixture>>> {
-    match el {
-        ExecutionClient::Reth => reth::stateless_validator_inputs(input_folder),
-        ExecutionClient::Ethrex => ethrex::stateless_validator_inputs(input_folder),
+impl ExecutionClient {
+    /// Returns the version string of the execution client (tag or short commit hash),
+    /// extracted from the resolved `Cargo.lock` at build time.
+    pub const fn version(&self) -> &'static str {
+        match self {
+            Self::Reth => env!("RETH_EL_VERSION"),
+            Self::Ethrex => env!("ETHREX_EL_VERSION"),
+        }
     }
 }
 
-/// Reads the benchmark fixtures folder and returns a list of block and witness pairs.
-pub fn read_benchmark_fixtures_folder(path: &Path) -> Result<Vec<StatelessValidationFixture>> {
-    WalkDir::new(path)
-        .min_depth(1)
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()?
-        .into_par_iter()
-        .map(|entry| {
-            if entry.file_type().is_file() {
-                let content = std::fs::read(entry.path())?;
-                let bw: StatelessValidationFixture =
-                    serde_json::from_slice(&content).map_err(|e| {
-                        anyhow::anyhow!("Failed to parse {}: {}", entry.path().display(), e)
-                    })?;
-                Ok(bw)
-            } else {
-                anyhow::bail!("Invalid input folder structure: expected files only")
-            }
-        })
-        .collect()
+/// Lazily prepares stateless validator inputs from a fixture folder.
+pub fn stateless_validator_input_iter(
+    input_folder: &Path,
+    selected_fixtures: Option<&[String]>,
+    el: ExecutionClient,
+    existing_output_dir: Option<&Path>,
+) -> Result<impl Iterator<Item = Result<Box<dyn GuestFixture>>>> {
+    fixtures::stateless_validator_input_iter(
+        input_folder,
+        selected_fixtures,
+        el,
+        existing_output_dir,
+    )
 }

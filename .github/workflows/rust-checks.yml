@@ -4,109 +4,114 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
 
-jobs: 
-  check-scripts:
-    name: Check bash scripts
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download and Extract Fixtures
-        run: |
-          chmod +x ./scripts/download-and-extract-fixtures.sh
-          ./scripts/download-and-extract-fixtures.sh v5.1.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  check-precompile-patches:
-    name: Check ${{ matrix.zkVM }} unused precompile patches
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - zkVM: reth-sp1-stateless-validator
-            xtask: sp1
-          - zkVM: reth-risc0-stateless-validator
-            xtask: risc0
-          - zkVM: reth-zisk-stateless-validator
-            xtask: zisk
-          - zkVM: reth-pico-stateless-validator
-            xtask: pico
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-       
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: ere-guests
-
-      - name: Check for unused [patch] entries
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo ${{ matrix.xtask }} 
-          cd ere-guests
-          if cargo tree -p ${{ matrix.zkVM }} 2>&1 | grep -F "was not used in the crate graph"; then
-            exit 1
-          fi
-
-  lint-and-test:
-    name: Lint and Test
+jobs:
+  fmt:
+    name: Formatting
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Install protoc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
-          components: clippy, rustfmt
-      
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
+          components: rustfmt
 
       - name: Check formatting
         run: cargo fmt --check --all
 
-      - name: Check clippy
-        run: cargo clippy --workspace --bins --lib --examples --tests --benches --all-features -- -D warnings 
-
-      - name: Run all tests except integration tests
-        env:
-          RPC_URL: ${{ secrets.RPC_URL }}
-          RPC_HEADERS: ${{ secrets.RPC_HEADERS }}
-        run: cargo test --release --workspace --exclude integration-tests -- --no-capture
- 
-  check-empty-patch-crates-io:
-    name: Check [patch.crates-io] is empty
+  clippy:
+    name: Clippy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check patch.crates-io is empty in ere-guests/Cargo.toml
-        run: |
-          # Extract lines between [patch.crates-io] and the next section
-          # Fail if there are non-empty, non-comment lines
-          sed -n '/^\[patch\.crates-io\]/,/^\[/p' ere-guests/Cargo.toml | \
-            sed '1d;$d' | \
-            grep -v '^[[:space:]]*#' | \
-            grep -v '^[[:space:]]*$' && \
-            { echo "ERROR: [patch.crates-io] section in ere-guests/Cargo.toml must be empty"; exit 1; } || \
-            echo "✓ [patch.crates-io] section is empty"
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: rust-checks
+          save-if: ${{ github.ref == 'refs/heads/master' }}
+
+      - name: Check clippy
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
+
+  doc:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: rust-checks
+          save-if: ${{ github.ref == 'refs/heads/master' }}
+
+      - name: Check documentation
+        run: cargo doc --locked --workspace --no-deps
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: rust-checks
+          save-if: ${{ github.ref == 'refs/heads/master' }}
+
+      - name: Run default tests
+        run: cargo test --locked --workspace -- --no-capture
+
+  slow-test:
+    name: Slow EEST Download Test
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: rust-checks
+          save-if: ${{ github.ref == 'refs/heads/master' }}
+
+      - name: Run slow witness-generator test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: cargo test --locked -p witness-generator --features slow-tests test_download_and_extract_default_tag -- --nocapture

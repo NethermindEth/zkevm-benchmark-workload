@@ -1,9 +1,12 @@
 //! Library for generating stateless validation fixtures for zkEVM benchmarking.
 //!
-//! Produces JSON fixtures containing Ethereum block data and execution witnesses from two sources:
+//! Produces JSON fixtures containing Ethereum block data and execution witnesses from three
+//! sources:
 //!
 //! - **EEST Generator** ([`eest_generator`]): Converts Ethereum Execution Spec Tests into fixtures
 //! - **RPC Generator** ([`rpc_generator`]): Fetches blocks and witnesses from live Ethereum nodes
+//! - **Raw Input Generator** ([`raw_input_generator`]): Downloads pre-collected block and witness
+//!   JSON-RPC response files from URLs listed in `raw_input_parts.txt`
 //!
 //! Core types: [`StatelessValidationFixture`] (block + witness), [`FixtureGenerator`].
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
@@ -11,11 +14,13 @@
 use std::{fs, path::Path};
 
 use async_trait::async_trait;
-use reth_stateless::StatelessInput;
 use serde::{Deserialize, Serialize};
+use stateless::StatelessInput;
 use thiserror::Error;
 
+pub mod eest_downloader;
 pub mod eest_generator;
+pub mod raw_input_generator;
 pub mod rpc_generator;
 
 /// Error types for witness generation operations.
@@ -40,7 +45,7 @@ pub enum WGError {
 
     /// Failed to download EEST fixtures
     #[error("failed to download EEST benchmark fixtures: {0}")]
-    DownloadScriptFailed(String),
+    DownloadFailed(String),
 
     /// Test suite path does not exist
     #[error("test suite path does not exist: {0}")]
@@ -61,8 +66,10 @@ pub enum WGError {
     NoTargetBlock(String),
 
     /// Test case execution error
-    #[error("test case execution error: {source}")]
+    #[error("test case execution error for {name}: {source}")]
     TestCaseExecutionError {
+        /// Name of the test case
+        name: String,
         /// Underlying error
         #[source]
         source: Box<dyn std::error::Error + Send + Sync>,
@@ -97,6 +104,45 @@ pub enum WGError {
     /// Unsupported chain
     #[error("unsupported chain ID: {0}")]
     UnsupportedChain(u64),
+
+    /// Genesis path does not exist
+    #[error("genesis path '{0}' does not exist")]
+    GenesisPathNotFound(String),
+
+    /// Genesis path is not a file
+    #[error("genesis path '{0}' is not a file")]
+    GenesisPathNotFile(String),
+
+    /// Failed to read a genesis file
+    #[error("failed to read genesis file at {path}: {source}")]
+    GenesisFileReadError {
+        /// Path to the genesis file
+        path: String,
+        /// Underlying I/O error
+        source: std::io::Error,
+    },
+
+    /// Failed to deserialize a genesis file
+    #[error("failed to deserialize genesis file at {path}: {source}")]
+    GenesisDeserializationError {
+        /// Path to the genesis file
+        path: String,
+        /// Underlying deserialization error
+        source: serde_json::Error,
+    },
+
+    /// RPC chain ID does not match the provided genesis file
+    #[error(
+        "genesis chain ID mismatch for '{path}': genesis={genesis_chain_id}, rpc={rpc_chain_id}"
+    )]
+    GenesisChainIdMismatch {
+        /// Path to the genesis file
+        path: String,
+        /// Chain ID from the genesis file
+        genesis_chain_id: u64,
+        /// Chain ID reported by the RPC endpoint
+        rpc_chain_id: u64,
+    },
 
     /// Live polling not supported in generate method
     #[error("live polling is not supported in generate method. Use generate_to_path instead.")]
@@ -141,6 +187,68 @@ pub enum WGError {
         value: String,
         /// Underlying error
         source: http::header::InvalidHeaderValue,
+    },
+
+    /// Raw input path was not set in the builder
+    #[error("raw input path was not set")]
+    RawInputPathNotSet,
+
+    /// Raw input path does not exist
+    #[error("raw input path '{0}' does not exist")]
+    RawInputPathNotFound(String),
+
+    /// Raw input path is not a directory
+    #[error("raw input path '{0}' is not a directory")]
+    RawInputPathNotDirectory(String),
+
+    /// Failed to read a raw input file
+    #[error("failed to read raw input file at {path}: {source}")]
+    RawInputFileReadError {
+        /// Path to the file
+        path: String,
+        /// Underlying I/O error
+        source: std::io::Error,
+    },
+
+    /// Failed to deserialize a raw input file
+    #[error("failed to deserialize raw input file at {path}: {source}")]
+    RawInputDeserializationError {
+        /// Path to the file
+        path: String,
+        /// Underlying deserialization error
+        source: serde_json::Error,
+    },
+
+    /// Failed to download a raw input file from URL
+    #[error("failed to download raw input file from {url}: {source}")]
+    RawInputUrlDownloadError {
+        /// The URL that failed
+        url: String,
+        /// Underlying HTTP error
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+
+    /// Invalid URL pair in `raw_input_parts.txt`
+    #[error(
+        "invalid URL pair at line {line}: expected eth_block.json and debug_executionWitness.json URLs"
+    )]
+    RawInputInvalidUrlPair {
+        /// Line number where the error occurred
+        line: usize,
+    },
+
+    /// Raw input generation completed with some fixture failures.
+    #[error(
+        "raw input generation completed with {ready} ready fixtures and {failed} failures:\n{details}"
+    )]
+    RawInputBatchFailed {
+        /// Number of fixtures that are ready on disk at the end of the run.
+        ready: usize,
+        /// Number of fixtures that failed during this run.
+        failed: usize,
+        /// Human-readable failure summary.
+        details: String,
     },
 
     /// Generic error for I/O, serialization, and other operations
@@ -237,6 +345,15 @@ impl StatelessValidationFixture {
             source: e,
         })?;
         Self::from_json(&contents)
+    }
+
+    /// Creates a new valid fixture from stateless input and a name.
+    pub fn from_stateless_input(input: &StatelessInput, name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            stateless_input: input.clone(),
+            success: true,
+        }
     }
 }
 

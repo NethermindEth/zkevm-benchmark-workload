@@ -10,15 +10,15 @@ default = []
 
 [dependencies]
 benchmark-runner.workspace = true
-block-encoding-length-guest.workspace = true
 
-ere-zkvm-interface.workspace = true
 ere-dockerized.workspace = true
 
 anyhow.workspace = true
 clap.workspace = true
+humantime.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+tokio.workspace = true
 
 
 [lints]

@@ -1,12 +1,10 @@
 //! CLI definitions for the zkVM benchmarker
 
-use std::{path::PathBuf, str::FromStr};
-
-use anyhow::Result;
 use benchmark_runner::{runner::Action, stateless_validator};
 use clap::{Parser, Subcommand, ValueEnum};
-use ere_dockerized::zkVMKind;
-use ere_zkvm_interface::ProverResourceType;
+use ere_dockerized::{ProverResource, RemoteProverConfig, zkVMKind};
+use std::path::PathBuf;
+use std::time::Duration;
 
 /// Command line interface for the zkVM benchmarker
 #[derive(Parser)]
@@ -18,6 +16,10 @@ pub struct Cli {
     /// Resource type for proving
     #[arg(short, long, value_enum, default_value = "cpu")]
     pub resource: Resource,
+
+    /// Endpoint URL of the proving cluster (required when --resource cluster)
+    #[arg(long, required_if_eq("resource", "cluster"))]
+    pub cluster_endpoint: Option<String>,
 
     /// Action to perform
     #[arg(short, long, value_enum, default_value = "execute")]
@@ -42,6 +44,39 @@ pub struct Cli {
     /// Output folder for dumping input files used in benchmarks
     #[arg(long)]
     pub dump_inputs: Option<PathBuf>,
+
+    /// Save generated proofs to the specified folder (only valid with --action prove)
+    #[arg(long)]
+    pub save_proofs: Option<PathBuf>,
+
+    /// Folder containing saved proofs (used with --action verify)
+    #[arg(
+        long,
+        default_value = "zkevm-fixtures-proofs",
+        conflicts_with = "proofs_url"
+    )]
+    pub proofs_folder: PathBuf,
+
+    /// URL to a .tar.gz archive containing proofs (used with --action verify).
+    #[arg(long, conflicts_with = "proofs_folder")]
+    pub proofs_url: Option<String>,
+
+    /// Base path for pre-compiled guest program binaries. If not set, they will be downloaded
+    /// from the resolved ere-guests release or commit artifacts.
+    #[arg(long)]
+    pub bin_path: Option<PathBuf>,
+
+    /// Timeout for the selected action only, for example `15m`, `5m`, or `2s`.
+    #[arg(long, value_name = "DURATION", value_parser = parse_duration)]
+    pub timeout: Option<Duration>,
+
+    /// Enable Zisk profiling (requires --zkvms zisk, --action execute)
+    #[arg(long)]
+    pub zisk_profile: bool,
+
+    /// Output folder for Zisk profile results
+    #[arg(long, default_value = "zisk-profiles")]
+    pub zisk_profile_output: PathBuf,
 }
 
 /// Subcommands for different guest programs
@@ -52,36 +87,15 @@ pub enum GuestProgramCommand {
         /// Input folder for benchmark fixtures
         #[arg(short, long, default_value = "zkevm-fixtures-input")]
         input_folder: PathBuf,
+        /// Fixture name prefix to run. Repeat to select multiple prefixes.
+        #[arg(long, value_name = "PREFIX")]
+        fixture: Option<Vec<String>>,
         /// Execution client to benchmark
         #[arg(short, long)]
         execution_client: ExecutionClient,
     },
     /// Empty program
     EmptyProgram,
-
-    /// Block encoding length
-    BlockEncodingLength {
-        /// Input folder for benchmark fixtures
-        #[arg(short, long, default_value = "zkevm-fixtures-input")]
-        input_folder: PathBuf,
-
-        /// Number of times to loop the benchmark
-        #[arg(long)]
-        loop_count: u16,
-
-        /// Encoding format
-        #[arg(short, long, value_enum)]
-        format: BlockEncodingFormat,
-    },
-}
-
-/// Encoding formats for block encoding length program
-#[derive(Debug, Clone, ValueEnum)]
-pub enum BlockEncodingFormat {
-    /// RLP encoding
-    Rlp,
-    /// SSZ encoding
-    Ssz,
 }
 
 /// Execution clients for the stateless validator
@@ -95,12 +109,12 @@ pub enum ExecutionClient {
 
 impl ExecutionClient {
     /// Get the guest relative path for the execution client
-    pub fn guest_rel_path(&self) -> Result<PathBuf> {
+    pub fn guest_rel_path(&self) -> PathBuf {
         let path = match self {
             Self::Reth => "stateless-validator/reth",
             Self::Ethrex => "stateless-validator/ethrex",
         };
-        Ok(PathBuf::from_str(path).unwrap())
+        PathBuf::from(path)
     }
 }
 
@@ -111,6 +125,8 @@ pub enum Resource {
     Cpu,
     /// GPU resource
     Gpu,
+    /// Proving cluster (requires --cluster-endpoint)
+    Cluster,
 }
 
 /// Benchmark actions
@@ -120,13 +136,27 @@ pub enum BenchmarkAction {
     Execute,
     /// Create a zkVM proof
     Prove,
+    /// Verify proofs loaded from disk
+    Verify,
 }
 
-impl From<Resource> for ProverResourceType {
-    fn from(resource: Resource) -> Self {
-        match resource {
-            Resource::Cpu => Self::Cpu,
-            Resource::Gpu => Self::Gpu,
+fn parse_duration(value: &str) -> Result<Duration, String> {
+    humantime::parse_duration(value).map_err(|err| err.to_string())
+}
+
+impl Cli {
+    /// Build the Ere [`ProverResource`] from parsed CLI args.
+    pub fn prover_resource(&self) -> ProverResource {
+        match self.resource {
+            Resource::Cpu => ProverResource::Cpu,
+            Resource::Gpu => ProverResource::Gpu,
+            Resource::Cluster => ProverResource::Cluster(RemoteProverConfig {
+                endpoint: self
+                    .cluster_endpoint
+                    .clone()
+                    .expect("clap required_if_eq should guarantee cluster_endpoint set"),
+                api_key: None,
+            }),
         }
     }
 }
@@ -136,15 +166,7 @@ impl From<BenchmarkAction> for Action {
         match action {
             BenchmarkAction::Execute => Self::Execute,
             BenchmarkAction::Prove => Self::Prove,
-        }
-    }
-}
-
-impl From<BlockEncodingFormat> for block_encoding_length_guest::guest::BlockEncodingFormat {
-    fn from(format: BlockEncodingFormat) -> Self {
-        match format {
-            BlockEncodingFormat::Rlp => Self::Rlp,
-            BlockEncodingFormat::Ssz => Self::Ssz,
+            BenchmarkAction::Verify => Self::Verify,
         }
     }
 }

@@ -23,6 +23,10 @@ pub struct BenchmarkRun<Metadata> {
     /// Proving metrics for the benchmark run.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proving: Option<ProvingMetrics>,
+    /// Standalone verification metrics for the benchmark run.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub verification: Option<VerificationMetrics>,
 }
 
 /// Hardware specs of the benchmark runner.
@@ -107,6 +111,8 @@ pub struct CrashInfo {
 pub enum ExecutionMetrics {
     /// Metrics for a successful execution workload.
     Success {
+        /// Whether public output matched the fixture's expected public values.
+        output_matched: bool,
         /// Total number of cycles for the entire workload execution.
         total_num_cycles: u64,
         /// Region-specific cycles, mapping region names (e.g., "setup", "compute") to their cycle counts.
@@ -124,12 +130,31 @@ pub enum ExecutionMetrics {
 pub enum ProvingMetrics {
     /// Metrics for a successful proving workload.
     Success {
+        /// Whether prover and verification public outputs matched the fixture's expected public values.
+        output_matched: bool,
         /// Proof size in bytes.
         proof_size: usize,
         /// Proving time in milliseconds.
         proving_time_ms: u128,
+        /// Verification time in milliseconds.
+        verification_time_ms: u128,
     },
     /// Metrics for a crashed proving workload.
+    Crashed(CrashInfo),
+}
+
+/// Metrics for standalone verification workloads, either successful or crashed.
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum VerificationMetrics {
+    /// Metrics for a successful verification workload.
+    Success {
+        /// Proof size in bytes.
+        proof_size: usize,
+        /// Verification time in milliseconds.
+        verification_time_ms: u128,
+    },
+    /// Metrics for a crashed verification workload.
     Crashed(CrashInfo),
 }
 
@@ -231,6 +256,7 @@ mod tests {
                     block_gas_used: 12345,
                 },
                 execution: Some(ExecutionMetrics::Success {
+                    output_matched: true,
                     total_num_cycles: 1_000,
                     region_cycles: HashMap::from_iter([
                         ("setup".to_string(), 100),
@@ -240,6 +266,7 @@ mod tests {
                     execution_duration: Duration::from_millis(150),
                 }),
                 proving: None,
+                verification: None,
             },
             BenchmarkRun {
                 name: "aes_bench".into(),
@@ -248,6 +275,7 @@ mod tests {
                     block_gas_used: 67890,
                 },
                 execution: Some(ExecutionMetrics::Success {
+                    output_matched: true,
                     total_num_cycles: 2_000,
                     region_cycles: HashMap::from_iter([
                         ("init".to_string(), 200),
@@ -257,9 +285,12 @@ mod tests {
                     execution_duration: Duration::from_millis(300),
                 }),
                 proving: Some(ProvingMetrics::Success {
+                    output_matched: true,
                     proof_size: 256,
                     proving_time_ms: 2_000,
+                    verification_time_ms: 200,
                 }),
+                verification: None,
             },
             BenchmarkRun {
                 name: "proving_bench".into(),
@@ -269,9 +300,12 @@ mod tests {
                 },
                 execution: None,
                 proving: Some(ProvingMetrics::Success {
+                    output_matched: true,
                     proof_size: 512,
                     proving_time_ms: 5_000,
+                    verification_time_ms: 500,
                 }),
+                verification: None,
             },
         ]
     }
@@ -313,11 +347,13 @@ mod tests {
                 block_gas_used: 11111,
             },
             execution: Some(ExecutionMetrics::Success {
+                output_matched: true,
                 total_num_cycles: 1000,
                 region_cycles: HashMap::new(),
                 execution_duration: Duration::from_millis(150),
             }),
             proving: None,
+            verification: None,
         };
 
         assert_eq!(benchmark_run.name, "test_benchmark");
@@ -332,6 +368,7 @@ mod tests {
                 block_gas_used: 22222,
             },
             execution: Some(ExecutionMetrics::Success {
+                output_matched: true,
                 total_num_cycles: 500,
                 region_cycles: HashMap::from_iter([
                     ("setup".to_string(), 50),
@@ -341,12 +378,59 @@ mod tests {
                 execution_duration: Duration::from_millis(100),
             }),
             proving: Some(ProvingMetrics::Success {
+                output_matched: true,
                 proof_size: 128,
                 proving_time_ms: 1500,
+                verification_time_ms: 150,
             }),
+            verification: None,
         };
         let json = BenchmarkRun::to_json(std::slice::from_ref(&bench)).expect("serialize mixed");
         let parsed = BenchmarkRun::from_json(&json).expect("deserialize mixed");
         assert_eq!(vec![bench], parsed);
+    }
+
+    #[test]
+    fn execution_success_serializes_output_matched_values() {
+        for output_matched in [true, false] {
+            let metrics = ExecutionMetrics::Success {
+                output_matched,
+                total_num_cycles: 42,
+                region_cycles: HashMap::new(),
+                execution_duration: Duration::from_millis(7),
+            };
+
+            let value = serde_json::to_value(&metrics).expect("serialize execution metrics");
+            assert_eq!(
+                value["success"]["output_matched"],
+                serde_json::Value::Bool(output_matched)
+            );
+
+            let parsed: ExecutionMetrics =
+                serde_json::from_value(value).expect("deserialize execution metrics");
+            assert_eq!(metrics, parsed);
+        }
+    }
+
+    #[test]
+    fn proving_success_serializes_output_matched_values() {
+        for output_matched in [true, false] {
+            let metrics = ProvingMetrics::Success {
+                output_matched,
+                proof_size: 256,
+                proving_time_ms: 2_000,
+                verification_time_ms: 200,
+            };
+
+            let value = serde_json::to_value(&metrics).expect("serialize proving metrics");
+            assert_eq!(
+                value["success"]["output_matched"],
+                serde_json::Value::Bool(output_matched)
+            );
+
+            let parsed: ProvingMetrics =
+                serde_json::from_value(value).expect("deserialize proving metrics");
+            assert_eq!(metrics, parsed);
+        }
     }
 }
