@@ -332,11 +332,16 @@ impl RpcFixtureGenerator {
     /// # Errors
     /// Returns an error if the RPC call fails or if the block cannot be found.
     async fn fetch_specific_block(&self, block_num: u64) -> Result<Box<dyn Fixture>> {
-        // Fetch the execution witness for the given block
-        let witness = DebugApiClient::<()>::debug_execution_witness(
+        // Fetch the execution witness for the given block. Nethermind's
+        // `debug_executionWitness` takes a single block param, unlike reth's typed
+        // client which also sends an include-block arg and gets rejected as an
+        // "Incorrect parameters count" by Nethermind. Issue the call directly with
+        // one positional param so both client families are supported.
+        use jsonrpsee::core::client::ClientT;
+        let witness: stateless::ExecutionWitness = ClientT::request(
             &self.client,
-            BlockNumberOrTag::Number(block_num),
-            None,
+            "debug_executionWitness",
+            jsonrpsee::rpc_params![BlockNumberOrTag::Number(block_num)],
         )
         .await
         .map_err(|e| WGError::RpcError(e.to_string()))?;
