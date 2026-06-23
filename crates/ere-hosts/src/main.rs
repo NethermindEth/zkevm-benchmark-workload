@@ -88,6 +88,16 @@ async fn main() -> Result<()> {
         }
     }
 
+    // Nethermind guest only targets Zisk.
+    if let GuestProgramCommand::StatelessValidator {
+        execution_client: cli::ExecutionClient::Nethermind,
+        ..
+    } = &cli.guest_program
+        && cli.zkvms.iter().any(|z| *z != zkVMKind::Zisk)
+    {
+        anyhow::bail!("--execution-client nethermind requires --zkvms zisk");
+    }
+
     // Resolve proofs source: download from URL or use local folder.
     // _proofs_tmpdir must live until verification completes (drop = cleanup).
     let (_proofs_tmpdir, proofs_folder) = if let Some(ref url) = cli.proofs_url {
@@ -122,8 +132,13 @@ async fn main() -> Result<()> {
             let el: stateless_validator::ExecutionClient = execution_client.into();
 
             let el_name = el.as_ref().to_lowercase();
-            // TODO: For Zesu until integrated to ere-guests when removing `--guest-artifact-base-url.yy
-            let el_version = if matches!(el, stateless_validator::ExecutionClient::Zesu) {
+            // Zesu and Nethermind ship externally (not via ere-guests), so their
+            // version comes from the supplied guest artifact source label.
+            let el_version = if matches!(
+                el,
+                stateless_validator::ExecutionClient::Zesu
+                    | stateless_validator::ExecutionClient::Nethermind
+            ) {
                 guest_source
                     .version_label()
                     .unwrap_or_else(|| el.version().to_string())

@@ -24,6 +24,8 @@ pub enum ExecutionClient {
     Zilkworm,
     /// Zesu stateless block validation guest program.
     Zesu,
+    /// Nethermind stateless block validation guest program (Zisk-only, externally built).
+    Nethermind,
 }
 
 /// Extra information about the block being benchmarked
@@ -41,7 +43,10 @@ impl ExecutionClient {
             Self::Reth => env!("RETH_EL_VERSION"),
             Self::Ethrex => env!("ETHREX_EL_VERSION"),
             Self::Zilkworm => env!("ZILKWORM_EL_VERSION"),
-            Self::Zesu => "unknown", // TODO: Temporary until gets republished through ere-guests and remove --guest-artifact-base-url new-ish flag.
+            // Externally shipped (not via ere-guests): real version comes from the
+            // guest artifact source label. Zesu is a TODO until it's republished
+            // through ere-guests and `--guest-artifact-base-url` can be dropped.
+            Self::Zesu | Self::Nethermind => "unknown",
         }
     }
 }

@@ -18,8 +18,14 @@ use ere_guests_stateless_validator_reth::guest::{
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use stateless_validator_zilkworm::StatelessValidatorZilkwormInput;
+use std::path::{Path, PathBuf};
 use tracing::info;
 use witness_generator::StatelessValidationFixture;
+
+/// Env var pointing at the `StatelessInputGen` binary built by
+/// `build-nethermind-guest.sh`. The Nethermind guest's wire format is
+/// canonically produced by that tool — we shell out per fixture.
+const NETHERMIND_INPUT_GEN_ENV: &str = "NETHERMIND_STATELESS_INPUT_GEN";
 
 #[derive(Debug, Clone, Serialize)]
 struct EestBlockMetadata {
@@ -35,6 +41,7 @@ struct EestBlockMetadata {
 
 pub(crate) fn stateless_validator_input_from_fixture(
     fixture: BenchmarkFixture,
+    fixture_path: &Path,
     el: ExecutionClient,
 ) -> Result<Box<dyn GuestFixture>> {
     match fixture {
@@ -42,6 +49,7 @@ pub(crate) fn stateless_validator_input_from_fixture(
             ExecutionClient::Reth => reth_input_from_fixture(*fixture),
             ExecutionClient::Ethrex => ethrex_input_from_fixture(*fixture),
             ExecutionClient::Zilkworm => zilkworm_input_from_fixture(*fixture),
+            ExecutionClient::Nethermind => nethermind_input_from_fixture(*fixture, fixture_path),
             ExecutionClient::Zesu => {
                 bail!(
                     "Zesu supports only EEST blockchain_tests fixtures with statelessInputBytes/statelessOutputBytes"
@@ -56,8 +64,68 @@ pub(crate) fn stateless_validator_input_from_fixture(
             ExecutionClient::Zilkworm => {
                 bail!("EEST fixture format not yet supported for Zilkworm")
             }
+            ExecutionClient::Nethermind => bail!(
+                "Nethermind guest does not support EEST fixtures yet (fixture: {})",
+                fixture.name
+            ),
         },
     }
+}
+
+fn nethermind_input_from_fixture(
+    fixture: StatelessValidationFixture,
+    fixture_path: &Path,
+) -> Result<Box<dyn GuestFixture>> {
+    if !fixture.success {
+        bail!(
+            "Nethermind guest only validates success fixtures, skip negative {}",
+            fixture.name
+        );
+    }
+    let stateless_input_gen = std::env::var(NETHERMIND_INPUT_GEN_ENV)
+        .map(PathBuf::from)
+        .with_context(|| format!("{NETHERMIND_INPUT_GEN_ENV} env var must be set"))?;
+
+    // Synthetic fixtures (e.g. EEST) activate forks at time 0 ⇒ send the chain
+    // config envelope so the guest builds a SpecProvider from it instead of its
+    // hardcoded mainnet schedule. Real chains (mainnet) carry genuine non-zero
+    // fork timestamps and must NOT get the envelope: the guest already knows that
+    // schedule, and feeding it the envelope currently crashes the guest.
+    let cfg = &fixture.stateless_input.chain_config;
+    let has_synthetic_timing = cfg.shanghai_time == Some(0)
+        || cfg.cancun_time == Some(0)
+        || cfg.prague_time == Some(0)
+        || cfg.osaka_time == Some(0);
+
+    let tmp = tempfile::tempdir().context("tempdir for StatelessInputGen output")?;
+    let mut cmd = std::process::Command::new(&stateless_input_gen);
+    cmd.arg("--from-fixture")
+        .arg(fixture_path)
+        .arg("--no-zisk")
+        .arg("--output")
+        .arg(tmp.path());
+    if has_synthetic_timing {
+        cmd.arg("--chain-config-envelope");
+    }
+    if !cmd.status().context("spawn StatelessInputGen")?.success() {
+        bail!("StatelessInputGen failed for {}", fixture.name);
+    }
+
+    let block_num = fixture.stateless_input.block.number;
+    let stdin = std::fs::read(tmp.path().join(format!("{block_num}.bin")))?;
+    let expected_public_values = std::fs::read(tmp.path().join(format!("{block_num}.hash")))?;
+
+    // `with_stdin` (not `with_prefixed_stdin`) — the C# guest reads framed
+    // payload directly, no u32 prefix like Rust guests' Platform expects.
+    Ok(GenericGuestFixture::<BlockMetadata> {
+        name: fixture.name,
+        input: Input::new().with_stdin(stdin),
+        expected_public_values,
+        metadata: BlockMetadata {
+            block_used_gas: fixture.stateless_input.block.gas_used,
+        },
+    }
+    .into_boxed())
 }
 
 #[derive(Debug, Clone, Copy)]

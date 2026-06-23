@@ -113,6 +113,8 @@ pub enum ExecutionClient {
     Zilkworm,
     /// Zesu execution client
     Zesu,
+    /// Nethermind execution client (Zisk-only).
+    Nethermind,
 }
 
 impl ExecutionClient {
@@ -123,6 +125,7 @@ impl ExecutionClient {
             Self::Ethrex => "stateless-validator/ethrex",
             Self::Zilkworm => "stateless-validator/zilkworm",
             Self::Zesu => "stateless-validator/zesu",
+            Self::Nethermind => "stateless-validator/nethermind",
         };
         PathBuf::from(path)
     }
@@ -188,6 +191,7 @@ impl From<ExecutionClient> for stateless_validator::ExecutionClient {
             ExecutionClient::Ethrex => Self::Ethrex,
             ExecutionClient::Zilkworm => Self::Zilkworm,
             ExecutionClient::Zesu => Self::Zesu,
+            ExecutionClient::Nethermind => Self::Nethermind,
         }
     }
 }

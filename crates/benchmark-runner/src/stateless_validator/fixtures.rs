@@ -159,7 +159,9 @@ where
                         existing_output_dir.as_deref(),
                     ) {
                         Ok(true) => None,
-                        Ok(false) => Some(stateless_validator_input_from_fixture(fixture, el)),
+                        Ok(false) => {
+                            Some(stateless_validator_input_from_fixture(fixture, &path, el))
+                        }
                         Err(err) => Some(Err(err)),
                     }
                 })
