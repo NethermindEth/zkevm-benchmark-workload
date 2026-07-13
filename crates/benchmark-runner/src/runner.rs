@@ -488,8 +488,9 @@ async fn load_compiled(
     if let GuestProgramSource::LocalPath(path) = guest_source {
         let elf = fs::read(path.join(format!("{guest_name}.elf")))
             .with_context(|| format!("Failed to read ELF from path: {}", path.display()))?;
-        let program_vk = fs::read(path.join(format!("{guest_name}.vk")))
-            .with_context(|| format!("Failed to read program vk from path: {}", path.display()))?;
+        // .vk is optional: the Zisk backend derives the verifying key from the ELF itself, and
+        // externally built guests (e.g. Nethermind via build-nethermind-guest.sh) ship no sidecar.
+        let program_vk = fs::read(path.join(format!("{guest_name}.vk"))).unwrap_or_default();
         let profiling_elf = fs::read(path.join(format!("{guest_name}-profiling.elf"))).ok();
         return Ok(CompiledGuest {
             elf,

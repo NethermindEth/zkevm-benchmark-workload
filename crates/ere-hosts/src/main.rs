@@ -122,12 +122,27 @@ async fn main() -> Result<()> {
             validate_guest_compatibility(el, &cli.zkvms, &guest_source)?;
 
             let el_name = el.as_ref().to_lowercase();
-            let el_version = if matches!(el, stateless_validator::ExecutionClient::Zesu) {
-                guest_source
-                    .version_label()
+            let el_version = match el {
+                // Externally built (build-nethermind-guest.sh): prefer the git sha recorded in
+                // the sidecar next to the ELF, then the dir name.
+                stateless_validator::ExecutionClient::Nethermind => {
+                    if let GuestProgramSource::LocalPath(path) = &guest_source {
+                        std::fs::read_to_string(
+                            path.join("stateless-validator-nethermind-zisk.version"),
+                        )
+                        .ok()
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty())
+                    } else {
+                        None
+                    }
+                    .or_else(|| guest_source.version_label())
                     .unwrap_or_else(|| el.version().to_string())
-            } else {
-                el.version().to_string()
+                }
+                stateless_validator::ExecutionClient::Zesu => guest_source
+                    .version_label()
+                    .unwrap_or_else(|| el.version().to_string()),
+                _ => el.version().to_string(),
             };
             let el_str = format!("{}-{}", el_name, el_version);
             let zkvms = get_el_zkvm_instances(
@@ -181,6 +196,18 @@ fn validate_guest_compatibility(
     zkvms: &[zkVMKind],
     guest_source: &GuestProgramSource,
 ) -> Result<()> {
+    // Nethermind's guest is externally built (build-nethermind-guest.sh) and only targets ZisK;
+    // it must be supplied via --bin-path.
+    if matches!(el, stateless_validator::ExecutionClient::Nethermind) {
+        if zkvms.iter().any(|zkvm| *zkvm != zkVMKind::Zisk) {
+            bail!("--execution-client nethermind requires --zkvms zisk");
+        }
+        if !matches!(guest_source, GuestProgramSource::LocalPath(_)) {
+            bail!("--execution-client nethermind requires --bin-path");
+        }
+        return Ok(());
+    }
+
     if !matches!(el, stateless_validator::ExecutionClient::Zesu)
         || !matches!(guest_source, GuestProgramSource::Default)
     {

@@ -24,6 +24,8 @@ pub enum ExecutionClient {
     Zilkworm,
     /// Zesu stateless block validation guest program.
     Zesu,
+    /// Nethermind stateless block validation guest program (C#, Zisk-only, externally built).
+    Nethermind,
 }
 
 /// Extra information about the block being benchmarked
@@ -46,6 +48,9 @@ impl ExecutionClient {
             Self::Ethrex => ere_guests_stateless_validator_ethrex::EL_VERSION,
             Self::Zilkworm => env!("ZILKWORM_EL_VERSION"),
             Self::Zesu => ZESU_EL_VERSION,
+            // Externally built (build-nethermind-guest.sh); real version comes from the
+            // `stateless-validator-nethermind-zisk.version` sidecar, resolved in main.rs.
+            Self::Nethermind => "unknown",
         }
     }
 }

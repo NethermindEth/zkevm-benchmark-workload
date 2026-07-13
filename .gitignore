@@ -15,3 +15,7 @@ zisk-profiles
 
 # private envrc file
 .envrc
+
+/.nethermind-src/
+/nethermind-guest/
+/nethermind-guest-perf/

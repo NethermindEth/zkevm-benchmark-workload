@@ -31,14 +31,21 @@ pub(crate) fn stateless_validator_input_from_fixture(
     match fixture {
         BenchmarkFixture::Legacy(fixture) => match el {
             ExecutionClient::Zilkworm => zilkworm_input_from_fixture(*fixture),
-            ExecutionClient::Reth | ExecutionClient::Ethrex | ExecutionClient::Zesu => {
+            ExecutionClient::Reth
+            | ExecutionClient::Ethrex
+            | ExecutionClient::Zesu
+            | ExecutionClient::Nethermind => {
                 bail!(
                     "{el:?} supports only canonical blockchain_tests fixtures with statelessInputBytes/statelessOutputBytes; legacy stateless_input fixtures are supported only for Zilkworm"
                 )
             }
         },
         BenchmarkFixture::Eest(fixture) => match el {
-            ExecutionClient::Reth | ExecutionClient::Ethrex => raw_eest_input_from_fixture(fixture),
+            // Nethermind's C# guest reads the canonical statelessInputBytes and returns the raw
+            // StatelessValidationResult, compared byte-for-byte against statelessOutputBytes.
+            ExecutionClient::Reth | ExecutionClient::Ethrex | ExecutionClient::Nethermind => {
+                raw_eest_input_from_fixture(fixture)
+            }
             ExecutionClient::Zesu => zesu_input_from_fixture(fixture),
             ExecutionClient::Zilkworm => {
                 bail!("EEST fixture format not yet supported for Zilkworm")
