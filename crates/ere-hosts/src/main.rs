@@ -196,14 +196,18 @@ fn validate_guest_compatibility(
     zkvms: &[zkVMKind],
     guest_source: &GuestProgramSource,
 ) -> Result<()> {
-    // Nethermind's guest is externally built (build-nethermind-guest.sh) and only targets ZisK;
-    // it must be supplied via --bin-path.
+    // Nethermind's guest is a C#/.NET program that only targets ZisK. The default downloader
+    // resolves artifacts from eth-act/ere-guests, which does not publish it, so the guest must be
+    // supplied explicitly — either locally built (build-nethermind-guest.sh) or from a release.
     if matches!(el, stateless_validator::ExecutionClient::Nethermind) {
         if zkvms.iter().any(|zkvm| *zkvm != zkVMKind::Zisk) {
             bail!("--execution-client nethermind requires --zkvms zisk");
         }
-        if !matches!(guest_source, GuestProgramSource::LocalPath(_)) {
-            bail!("--execution-client nethermind requires --bin-path");
+        if matches!(guest_source, GuestProgramSource::Default) {
+            bail!(
+                "--execution-client nethermind requires --bin-path or --guest-artifact-base-url \
+                 (e.g. https://github.com/NethermindEth/ere-guests/releases/download/v0.14.2/)"
+            );
         }
         return Ok(());
     }
