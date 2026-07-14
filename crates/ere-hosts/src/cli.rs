@@ -63,8 +63,12 @@ pub struct Cli {
 
     /// Base path for pre-compiled guest program binaries. If not set, they will be downloaded
     /// from the resolved ere-guests release or commit artifacts.
-    #[arg(long)]
+    #[arg(long, conflicts_with = "guest_artifact_base_url")]
     pub bin_path: Option<PathBuf>,
+
+    /// Base URL for pre-compiled guest program artifacts.
+    #[arg(long, conflicts_with = "bin_path")]
+    pub guest_artifact_base_url: Option<String>,
 
     /// Timeout for the selected action only, for example `15m`, `5m`, or `2s`.
     #[arg(long, value_name = "DURATION", value_parser = parse_duration)]
@@ -94,8 +98,6 @@ pub enum GuestProgramCommand {
         #[arg(short, long)]
         execution_client: ExecutionClient,
     },
-    /// Empty program
-    EmptyProgram,
 }
 
 /// Execution clients for the stateless validator
@@ -105,6 +107,14 @@ pub enum ExecutionClient {
     Reth,
     /// Ethrex execution client
     Ethrex,
+    /// Zilkworm execution client
+    Zilkworm,
+    /// Zesu execution client
+    Zesu,
+    /// Nethermind execution client (C#, Zisk-only, externally built — requires
+    /// `--bin-path` pointing at a directory with
+    /// `stateless-validator-nethermind-zisk.elf`).
+    Nethermind,
 }
 
 impl ExecutionClient {
@@ -113,6 +123,9 @@ impl ExecutionClient {
         let path = match self {
             Self::Reth => "stateless-validator/reth",
             Self::Ethrex => "stateless-validator/ethrex",
+            Self::Zilkworm => "stateless-validator/zilkworm",
+            Self::Zesu => "stateless-validator/zesu",
+            Self::Nethermind => "stateless-validator/nethermind",
         };
         PathBuf::from(path)
     }
@@ -176,6 +189,9 @@ impl From<ExecutionClient> for stateless_validator::ExecutionClient {
         match client {
             ExecutionClient::Reth => Self::Reth,
             ExecutionClient::Ethrex => Self::Ethrex,
+            ExecutionClient::Zilkworm => Self::Zilkworm,
+            ExecutionClient::Zesu => Self::Zesu,
+            ExecutionClient::Nethermind => Self::Nethermind,
         }
     }
 }

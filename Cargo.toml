@@ -3,6 +3,7 @@ members = [
     "crates/metrics",
     "crates/witness-generator",
     "crates/witness-generator-cli",
+    "crates/witness-generator-spec-cli",
     "crates/ere-hosts",
 ]
 resolver = "2"
@@ -100,20 +101,22 @@ zero_sized_map_values = "warn"
 
 # local dependencies
 witness-generator = { path = "crates/witness-generator" }
+witness-generator-spec-cli = { path = "crates/witness-generator-spec-cli" }
 zkevm-metrics = { path = "crates/metrics" }
 benchmark-runner = { path = "crates/benchmark-runner" }
 
 # ere
-ere-dockerized = { git = "https://github.com/eth-act/ere", tag = "v0.11.0" }
-ere-cluster-client-zisk = { git = "https://github.com/eth-act/ere", tag = "v0.11.0" }
-ere-util-tokio = { git = "https://github.com/eth-act/ere", tag = "v0.11.0" }
+ere-dockerized = { git = "https://github.com/eth-act/ere", tag = "v0.13.0" }
+ere-cluster-client-zisk = { git = "https://github.com/eth-act/ere", tag = "v0.13.0" }
+ere-util-tokio = { git = "https://github.com/eth-act/ere", tag = "v0.13.0" }
 
 # ere-guests
-ere-guests-stateless-validator-reth = { git = "https://github.com/eth-act/ere-guests", tag = "v0.11.0", package = "stateless-validator-reth" }
-ere-guests-stateless-validator-ethrex = { git = "https://github.com/eth-act/ere-guests", tag = "v0.11.0", package = "stateless-validator-ethrex" }
-ere-guests-guest = { git = "https://github.com/eth-act/ere-guests", tag = "v0.11.0", package = "guest" }
-ere-guests-integration-tests = { git = "https://github.com/eth-act/ere-guests", tag = "v0.11.0", package = "integration-tests" }
-ere-guests-downloader = { git = "https://github.com/eth-act/ere-guests", tag = "v0.11.0", package = "downloader" }
+stateless-validator-common = { git = "https://github.com/eth-act/ere-guests", tag = "v0.13.0", package = "stateless-validator-common" }
+ere-guests-stateless-validator-ethrex = { git = "https://github.com/eth-act/ere-guests", tag = "v0.13.0", package = "stateless-validator-ethrex" }
+stateless-validator-zilkworm = { git = "https://github.com/erigontech/zilkworm", tag = "v0.1.0-alpha.2-ere", package = "z6m_stateless_validator", features = [
+    "download",
+] }
+ere-guests-downloader = { git = "https://github.com/eth-act/ere-guests", tag = "v0.13.0", package = "downloader" }
 
 reth-ethereum-primitives = { git = "https://github.com/paradigmxyz/reth", tag = "v2.1.0" }
 reth-rpc-api = { git = "https://github.com/paradigmxyz/reth", tag = "v2.1.0" }
@@ -122,9 +125,12 @@ ef-tests = { git = "https://github.com/paradigmxyz/stateless", rev = "e5480e71a8
 stateless = { git = "https://github.com/paradigmxyz/stateless", rev = "e5480e71a8031641ff471cad9dc482a7a14b32d5", default-features = false }
 
 # alloy
-alloy-eips = { version = "2.0" }
-alloy-rpc-types-eth = "2.0"
-alloy-genesis = { version = "2.0", default-features = false }
+alloy-consensus = { version = "=2.0.5", default-features = false }
+alloy-eips = { version = "=2.0.5" }
+alloy-primitives = { version = "=1.6.0", default-features = false }
+alloy-rpc-types-eth = "=2.0.5"
+alloy-genesis = { version = "=2.0.5", default-features = false }
+alloy-rlp = { version = "0.3", default-features = false }
 
 # misc
 clap = { version = "4.0", features = ["derive"] }
@@ -139,6 +145,7 @@ serde_derive = "*"
 jsonrpsee = "0.26.0"
 anyhow = "1.0"
 async-trait = "0.1.88"
+futures = "0.3.32"
 tokio = { version = "1.45.1" }
 tokio-util = "0.7.15"
 tracing = "0.1.41"
@@ -147,6 +154,7 @@ erased-serde = "0.4.8"
 auto_impl = "1.3.0"
 tempfile = "3.10"
 humantime = "2.1"
+time = { version = "0.3", features = ["formatting"] }
 reqwest = { version = "0.12", default-features = false, features = [
     "rustls-tls-native-roots",
     "json",
@@ -155,3 +163,4 @@ flate2 = "1.1"
 tar = "0.4"
 toml = "0.8"
 hex = "0.4"
+zstd = "0.13"

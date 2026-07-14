@@ -48,6 +48,7 @@ pub fn iter_benchmark_fixture_paths(path: &Path) -> impl Iterator<Item = PathBuf
 
     WalkDir::new(path)
         .min_depth(min_depth)
+        .sort_by_file_name()
         .into_iter()
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.file_type().is_file())
@@ -148,7 +149,7 @@ where
     I: Iterator<Item = PathBuf>,
 {
     paths.flat_map(move |path| {
-        let results: Vec<_> = match load_benchmark_fixtures(&path, &input_root) {
+        let results: Vec<_> = match load_benchmark_fixtures(&path, &input_root, el) {
             Ok(fixtures) => fixtures
                 .into_iter()
                 .filter(|fixture| fixture_matches_prefixes(fixture, fixture_prefixes.as_deref()))
@@ -182,12 +183,21 @@ fn fixture_matches_prefixes(fixture: &BenchmarkFixture, prefixes: Option<&[Strin
     })
 }
 
-fn load_benchmark_fixtures(path: &Path, input_root: &Path) -> Result<Vec<BenchmarkFixture>> {
+fn load_benchmark_fixtures(
+    path: &Path,
+    input_root: &Path,
+    el: ExecutionClient,
+) -> Result<Vec<BenchmarkFixture>> {
     let content = std::fs::read(path)?;
     let value: serde_json::Value = serde_json::from_slice(&content)
         .with_context(|| format!("Failed to parse {}", path.display()))?;
 
     if value.get("stateless_input").is_some() {
+        if !matches!(el, ExecutionClient::Zilkworm) {
+            bail!(
+                "{el:?} supports only canonical blockchain_tests fixtures with statelessInputBytes/statelessOutputBytes; legacy stateless_input fixtures are supported only for Zilkworm"
+            );
+        }
         let fixture = serde_json::from_value(value)
             .with_context(|| format!("Failed to parse legacy fixture {}", path.display()))?;
         return Ok(vec![BenchmarkFixture::Legacy(Box::new(fixture))]);
@@ -243,15 +253,32 @@ fn normalize_fixture_prefix(prefix: &str) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sha2::{Digest, Sha256};
     use std::fs;
+
+    #[test]
+    fn fixture_iter_yields_sorted_paths() -> Result<()> {
+        let dir = tempfile::tempdir()?;
+
+        let paths = (24950000..)
+            .take(100)
+            .map(|block_number| dir.path().join(format!("{block_number}.json")))
+            .collect::<Vec<_>>();
+
+        for path in &paths {
+            fs::File::create(path)?;
+        }
+
+        assert_eq!(paths, benchmark_fixture_paths(dir.path())?);
+
+        Ok(())
+    }
 
     #[test]
     fn fixture_prefix_matching_accepts_safe_and_original_eest_names() -> Result<()> {
         let dir = tempfile::tempdir()?;
         let fixture_path = dir.path().join("mcopy.json");
         fs::write(&fixture_path, sample_eest_fixture())?;
-        let fixtures = load_benchmark_fixtures(&fixture_path, dir.path())?;
+        let fixtures = load_benchmark_fixtures(&fixture_path, dir.path(), ExecutionClient::Reth)?;
         let fixture = fixtures
             .iter()
             .find(|fixture| {
@@ -276,7 +303,7 @@ mod tests {
     }
 
     #[test]
-    fn eest_fixture_iter_yields_raw_input_and_hashed_output() -> Result<()> {
+    fn eest_fixture_iter_yields_raw_input_and_output() -> Result<()> {
         let dir = tempfile::tempdir()?;
         let fixture_path = dir.path().join("mcopy.json");
         fs::write(&fixture_path, sample_eest_fixture())?;
@@ -293,10 +320,7 @@ mod tests {
 
         let input = guest_fixture.input()?;
         assert_eq!(input.stdin(), [0x00, 0x01, 0x02]);
-        assert_eq!(
-            guest_fixture.expected_public_values()?,
-            Sha256::digest([0xaa, 0xbb]).to_vec()
-        );
+        assert_eq!(guest_fixture.expected_public_values()?, [0xaa, 0xbb]);
 
         let metadata = guest_fixture.metadata();
         assert_eq!(metadata["fixture_format"], "eest");
@@ -305,6 +329,24 @@ mod tests {
             "tests/foo.py::test_same[name/a]"
         );
         assert_eq!(metadata["block_used_gas"].as_u64(), Some(16));
+
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_fixtures_are_rejected_for_canonical_clients() -> Result<()> {
+        let dir = tempfile::tempdir()?;
+        let fixture_path = dir.path().join("legacy.json");
+        fs::write(&fixture_path, r#"{"stateless_input": {}}"#)?;
+
+        for client in [
+            ExecutionClient::Reth,
+            ExecutionClient::Ethrex,
+            ExecutionClient::Zesu,
+        ] {
+            let err = load_benchmark_fixtures(&fixture_path, dir.path(), client).unwrap_err();
+            assert!(err.to_string().contains("supported only for Zilkworm"));
+        }
 
         Ok(())
     }

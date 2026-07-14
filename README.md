@@ -13,6 +13,7 @@ This repository benchmarks Ethereum-related guest programs across multiple zkVMs
 ## Workspace At a Glance
 
 - **`crates/witness-generator-cli`**: fixture-generation CLI for EEST, RPC, and raw-input sources.
+- **`crates/witness-generator-spec-cli`**: CLI and library for generating canonical stateless input bytes from CL/EL RPC endpoints.
 - **`crates/ere-hosts`**: benchmark CLI for execution, proving, and verification jobs.
 - **`crates/benchmark-runner`**: shared orchestration for guest resolution, execution, proof flow, and verification.
 - **`crates/metrics`**: serializable result types such as `BenchmarkRun`.
@@ -31,6 +32,7 @@ Verify that both CLIs are reachable from the repo root:
 
 ```bash
 cargo run -p witness-generator-cli -- --help
+cargo run -p witness-generator-spec-cli -- --help
 cargo run -p ere-hosts -- --help
 ```
 
@@ -54,6 +56,7 @@ cargo run -p ere-hosts --release -- --zkvms sp1 stateless-validator --execution-
 - [Benchmark input reference](docs/benchmark-execution-inputs.md)
 - [Benchmark output reference](docs/benchmark-execution-output.md)
 - [Witness Generator CLI notes](docs/witness-generator-cli.md)
+- [Stateless input publication guide](docs/stateless-input-publication.md)
 
 The root README is intentionally short. Detailed workflow documentation lives under `docs/`.
 

@@ -4,10 +4,9 @@
 
 use anyhow::{Context, Result, bail};
 use benchmark_runner::{
-    empty_program,
     runner::{
-        Action, ProfileConfig, RunConfig, benchmark_output_dir, get_el_zkvm_instances,
-        get_guest_zkvm_instances, run_benchmark_iter,
+        Action, GuestProgramSource, ProfileConfig, RunConfig, benchmark_output_dir,
+        get_el_zkvm_instances, run_benchmark_iter,
     },
     stateless_validator::{self},
     verification::{download_and_extract_proofs, resolve_extracted_root, run_verify_from_disk},
@@ -97,7 +96,12 @@ async fn main() -> Result<()> {
     } else {
         (None, cli.proofs_folder)
     };
-    let bin_path = cli.bin_path.as_deref();
+    let guest_source = match (cli.bin_path, cli.guest_artifact_base_url) {
+        (Some(path), None) => GuestProgramSource::LocalPath(path),
+        (None, Some(url)) => GuestProgramSource::ArtifactBaseUrl(url),
+        (None, None) => GuestProgramSource::Default,
+        (Some(_), Some(_)) => unreachable!("clap conflicts_with should reject this combination"),
+    };
     let config_base = RunConfig {
         output_folder: cli.output_folder,
         sub_folder: None,
@@ -115,15 +119,38 @@ async fn main() -> Result<()> {
             execution_client,
         } => {
             let el: stateless_validator::ExecutionClient = execution_client.into();
+            validate_guest_compatibility(el, &cli.zkvms, &guest_source)?;
 
             let el_name = el.as_ref().to_lowercase();
-            let el_str = format!("{}-{}", el_name, el.version());
+            let el_version = match el {
+                // Externally built (build-nethermind-guest.sh): prefer the git sha recorded in
+                // the sidecar next to the ELF, then the dir name.
+                stateless_validator::ExecutionClient::Nethermind => {
+                    if let GuestProgramSource::LocalPath(path) = &guest_source {
+                        std::fs::read_to_string(
+                            path.join("stateless-validator-nethermind-zisk.version"),
+                        )
+                        .ok()
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty())
+                    } else {
+                        None
+                    }
+                    .or_else(|| guest_source.version_label())
+                    .unwrap_or_else(|| el.version().to_string())
+                }
+                stateless_validator::ExecutionClient::Zesu => guest_source
+                    .version_label()
+                    .unwrap_or_else(|| el.version().to_string()),
+                _ => el.version().to_string(),
+            };
+            let el_str = format!("{}-{}", el_name, el_version);
             let zkvms = get_el_zkvm_instances(
                 &el_name,
                 &cli.zkvms,
                 resource,
                 zkvm_config.clone(),
-                bin_path,
+                &guest_source,
             )
             .await
             .context("Failed to get EL zkvm instances")?;
@@ -159,33 +186,49 @@ async fn main() -> Result<()> {
                 }
             }
         }
-        GuestProgramCommand::EmptyProgram => {
-            info!("Running empty-program benchmarks");
-            let zkvms = get_guest_zkvm_instances(
-                "empty",
-                &cli.zkvms,
-                resource,
-                zkvm_config.clone(),
-                bin_path,
-            )
-            .await
-            .context("Failed to get guest zkvm instances")?;
+    }
 
-            match action {
-                Action::Verify => {
-                    for instance in &zkvms {
-                        run_verify_from_disk(instance, &config_base, &proofs_folder)?;
-                    }
-                }
-                _ => {
-                    for zkvm in zkvms {
-                        let guest_io = empty_program::empty_program_input()
-                            .context("Failed to create empty program input")?;
-                        run_benchmark_iter(&zkvm, &config_base, std::iter::once(Ok(guest_io)))?;
-                    }
-                }
-            }
+    Ok(())
+}
+
+fn validate_guest_compatibility(
+    el: stateless_validator::ExecutionClient,
+    zkvms: &[zkVMKind],
+    guest_source: &GuestProgramSource,
+) -> Result<()> {
+    // Nethermind's guest is a C#/.NET program that only targets ZisK. The default downloader
+    // resolves artifacts from eth-act/ere-guests, which does not publish it, so the guest must be
+    // supplied explicitly — either locally built (build-nethermind-guest.sh) or from a release.
+    if matches!(el, stateless_validator::ExecutionClient::Nethermind) {
+        if zkvms.iter().any(|zkvm| *zkvm != zkVMKind::Zisk) {
+            bail!("--execution-client nethermind requires --zkvms zisk");
         }
+        if matches!(guest_source, GuestProgramSource::Default) {
+            bail!(
+                "--execution-client nethermind requires --bin-path or --guest-artifact-base-url \
+                 (e.g. https://github.com/NethermindEth/ere-guests/releases/download/v0.14.2/)"
+            );
+        }
+        return Ok(());
+    }
+
+    if !matches!(el, stateless_validator::ExecutionClient::Zesu)
+        || !matches!(guest_source, GuestProgramSource::Default)
+    {
+        return Ok(());
+    }
+
+    let unsupported = zkvms
+        .iter()
+        .filter(|zkvm| **zkvm != zkVMKind::Zisk)
+        .map(|zkvm| zkvm.as_str())
+        .collect::<Vec<_>>();
+    if !unsupported.is_empty() {
+        bail!(
+            "the default Zesu {} artifact is available only for ZisK; unsupported --zkvms: {}",
+            el.version(),
+            unsupported.join(", ")
+        );
     }
 
     Ok(())
